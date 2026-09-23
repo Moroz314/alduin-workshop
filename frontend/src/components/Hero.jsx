@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom'
 
-import heroAxe from './oboi.jpg'
+import heroAxe from './oboi2.jpg'
 
 /**
  * Hero.jsx — Главный экран.
