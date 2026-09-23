@@ -1,33 +1,20 @@
 #!/bin/bash
-set -e
+set -euo pipefail
+cd "$(dirname "$0")"
 
-echo "=== Развертывание проекта на сервере (188.225.23.146) ==="
-
-# Проверка наличия .env
 if [ ! -f .env ]; then
-    echo "[!] Файл .env не найден. Создаю из .env.example..."
     cp .env.example .env
-    echo "[!] Пожалуйста, отредактируйте .env перед первым запуском!"
+    echo "[!] Создан .env из примера. Заполните его (пароли, секретный ключ, DEBUG=false) и запустите скрипт снова."
+    exit 1
 fi
 
+echo "[+] Обновление кода..."
+git pull --ff-only
+
 echo "[+] Сборка и запуск контейнеров..."
-docker compose down --remove-orphans
-docker compose up -d --build
+docker compose up -d --build --remove-orphans --wait
 
-echo "[+] Ожидание инициализации сервисов..."
-sleep 5
-
-echo "[+] Статус контейнеров:"
+echo "[+] Статус:"
 docker compose ps
 
-echo ""
-echo "================================================================"
-echo " Сайт доступен по адресу: http://188.225.23.146/"
-echo " Swagger документация API: http://188.225.23.146/api/docs"
-echo "----------------------------------------------------------------"
-echo " Для создания администратора выполните:"
-echo "   docker compose exec backend python create_admin.py admin ВАШ_ПАРОЛЬ"
-echo ""
-echo " Для наполнения тестовыми товарами (опционально):"
-echo "   docker compose exec backend python seed.py"
-echo "================================================================"
+echo "Создать админа:  docker compose exec backend python create_admin.py admin"
