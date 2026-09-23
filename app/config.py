@@ -18,7 +18,7 @@ class Settings(BaseSettings):
     # YooKassa acquiring
     yookassa_shop_id: str = ""
     yookassa_secret_key: str = ""
-    yookassa_return_url: str = "http://188.225.23.146/checkout"
+    yookassa_return_url: str = "http://5.35.91.123/checkout"
 
     # PostgreSQL
     postgres_host: str = "localhost"
