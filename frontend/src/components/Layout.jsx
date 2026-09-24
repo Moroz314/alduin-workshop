@@ -46,8 +46,7 @@ const XIcon = () => (
   </svg>
 )
 
-/* Пункты навигации строго по требованию:
-   Каталог, Новости, О мастерской, Обучение, Галерея, Контакты */
+/* Пункты навигации */
 const NAV_ITEMS = [
   { to: '/',         label: 'Каталог' },
   { to: '/news',     label: 'Новости' },
@@ -198,7 +197,7 @@ function Header() {
               </div>
             </Link>
 
-            {/* ── Десктопная навигация: 6 прямых пунктов ──────── */}
+            {/* ── Десктопная навигация ──────── */}
             <nav className="hidden md:flex items-center gap-6 lg:gap-8" aria-label="Основная навигация">
               {NAV_ITEMS.map((item) => (
                 <NavLink
@@ -216,9 +215,8 @@ function Header() {
               ))}
             </nav>
 
-            {/* ── Правая панель (Корзина и бургер) ─────────────── */}
+            {/* ── Правая панель ─────────────── */}
             <div className="flex items-center gap-2">
-              {/* Корзина — квадратный контур */}
               <button
                 onClick={() => dispatch(toggleDrawer())}
                 className="relative w-10 h-10 flex items-center justify-center
@@ -238,7 +236,6 @@ function Header() {
                 )}
               </button>
 
-              {/* Бургер — мобайл */}
               <button
                 onClick={() => setMenuOpen(v => !v)}
                 className="md:hidden w-10 h-10 flex items-center justify-center
@@ -284,14 +281,16 @@ const RtIcon = () => (
 
 /* ── Значения по умолчанию для футера ────────────────────────────────────── */
 const FOOTER_DEFAULTS = {
-  contact_phone1:  '+79500082208',
-  contact_phone2:  '+79202091993',
-  contact_inn:     '780534396013',
-  contact_ogrnip:  '325784700428266',
-  social_vk:       'https://vk.com/alduin_workshop',
-  social_tg:       'https://t.me/alduin_workshop',
-  social_yt:       'https://youtube.com/@alduln_workshop?si=F9XkPmBBNxbPs9e2',
-  social_rutube:   'https://rutube.ru/channel/48354889',
+  contact_phone1:     '+79500082208',
+  contact_phone2:     '+79202091993',
+  contact_inn:        '780534396013',
+  contact_ogrnip:     '325784700428266',
+  contact_email:      'info@alduin-workshop.ru',
+  contact_legal_name: 'ИП Морозов Владислав Сергеевич',
+  social_vk:          'https://vk.com/alduin_workshop',
+  social_tg:          'https://t.me/alduin_workshop',
+  social_yt:          'https://youtube.com/@alduln_workshop?si=F9XkPmBBNxbPs9e2',
+  social_rutube:      'https://rutube.ru/channel/48354889',
 }
 
 function formatPhone(raw) {
@@ -354,53 +353,77 @@ function Footer() {
                   {formatPhone(s.contact_phone2)}
                 </a>
               )}
+              {s.contact_email && (
+                <a href={`mailto:${s.contact_email}`}
+                  className="block text-forge-muted hover:text-forge-primary font-body text-sm transition-colors">
+                  {s.contact_email}
+                </a>
+              )}
             </div>
           </div>
 
-          {/* Соцсети */}
-          <div className="space-y-4">
-            <h4 className="text-forge-primary text-xs tracking-[0.25em] uppercase font-body font-semibold">
-              Мы в сети
-            </h4>
-            <div className="flex flex-wrap gap-3 font-body text-sm">
-              {socials.map(({ key, label, Icon }) =>
-                s[key] ? (
-                  <a
-                    key={key}
-                    href={s[key]}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center gap-2 px-4 py-2 bg-forge-surface border border-forge-border
-                               text-forge-text hover:text-forge-primary hover:border-forge-primary/50 transition-colors"
-                    aria-label={label}
-                  >
-                    <Icon />
-                    {label}
-                  </a>
-                ) : null
-              )}
+          {/* Правая часть: соцсети + юридические ссылки */}
+          <div className="flex flex-col sm:flex-row gap-10">
+            {/* Соцсети */}
+            <div className="space-y-4">
+              <h4 className="text-forge-primary text-xs tracking-[0.25em] uppercase font-body font-semibold">
+                Мы в сети
+              </h4>
+              <div className="flex flex-wrap gap-3 font-body text-sm">
+                {socials.map(({ key, label, Icon }) =>
+                  s[key] ? (
+                    <a
+                      key={key}
+                      href={s[key]}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-2 px-4 py-2 bg-forge-surface border border-forge-border
+                                 text-forge-text hover:text-forge-primary hover:border-forge-primary/50 transition-colors"
+                      aria-label={label}
+                    >
+                      <Icon />
+                      {label}
+                    </a>
+                  ) : null
+                )}
+              </div>
+            </div>
+
+            {/* Юридические страницы */}
+            <div className="space-y-4">
+              <h4 className="text-forge-primary text-xs tracking-[0.25em] uppercase font-body font-semibold">
+                Документы
+              </h4>
+              <nav className="flex flex-col gap-2 font-body text-sm" aria-label="Юридические документы">
+                <Link to="/warranty"
+                  className="text-forge-muted hover:text-forge-primary transition-colors">
+                  Гарантия и возврат
+                </Link>
+                <Link to="/privacy"
+                  className="text-forge-muted hover:text-forge-primary transition-colors">
+                  Политика конфиденциальности
+                </Link>
+                <Link to="/payment"
+                  className="text-forge-muted hover:text-forge-primary transition-colors">
+                  Оплата и доставка
+                </Link>
+              </nav>
             </div>
           </div>
         </div>
 
-        {/* Копирайт + реквизиты + гарантия */}
+        {/* Нижняя строка: копирайт + реквизиты */}
         <div className="mt-10 pt-6 border-t border-forge-border/60
-                        flex flex-col sm:flex-row items-center justify-between
+                        flex flex-col sm:flex-row items-start sm:items-center justify-between
                         gap-3 text-forge-muted/50 text-xs tracking-wider font-body">
-          <div className="flex flex-col sm:flex-row items-center gap-2">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-3 flex-wrap">
             <span>© {year} Мастерская Алдуин. Все права защищены.</span>
-            {(s.contact_inn || s.contact_ogrnip) && (
-              <span className="hidden sm:inline">·</span>
+            {s.contact_legal_name && (
+              <span className="text-forge-muted/40">{s.contact_legal_name}</span>
             )}
             {s.contact_inn && <span>ИНН {s.contact_inn}</span>}
             {s.contact_ogrnip && <span>ОГРНИП {s.contact_ogrnip}</span>}
           </div>
-          <Link
-            to="/warranty"
-            className="hover:text-forge-primary transition-colors whitespace-nowrap"
-          >
-            Гарантия · Возврат
-          </Link>
         </div>
       </div>
     </footer>

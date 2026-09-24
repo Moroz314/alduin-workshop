@@ -9,6 +9,8 @@ import CheckoutPage from './pages/CheckoutPage'
 import ContactsPage from './pages/ContactsPage'
 import ProductPage from './pages/ProductPage'
 import WarrantyPage from './pages/WarrantyPage'
+import PrivacyPage from './pages/PrivacyPage'
+import PaymentPage from './pages/PaymentPage'
 
 /* Admin pages */
 import AdminLogin        from './pages/admin/AdminLogin'
@@ -17,16 +19,6 @@ import AdminOrders       from './pages/admin/AdminOrders'
 import AdminContent      from './pages/admin/AdminContent'
 import AdminGallery      from './pages/admin/AdminGallery'
 import AdminSiteSettings from './pages/admin/AdminSiteSettings'
-
-/* ── Заглушка ─────────────────────────────────────────────── */
-const Placeholder = ({ title }) => (
-  <section className="max-w-3xl mx-auto px-4 sm:px-6 py-24 text-center">
-    <p className="gold-tag mb-4">◇ Мастерская Алдуин</p>
-    <h1 className="font-serif font-bold text-forge-text text-4xl mb-4">{title}</h1>
-    <div className="w-10 h-px bg-forge-primary mx-auto mb-4" />
-    <p className="text-forge-muted font-body text-sm">Страница в разработке</p>
-  </section>
-)
 
 /* ── Protected route ──────────────────────────────────────── */
 function PrivateRoute({ children }) {
@@ -67,8 +59,10 @@ export default function App() {
                 <Route path="/checkout"  element={<CheckoutPage />} />
                 <Route path="/contacts"  element={<ContactsPage />} />
                 <Route path="/warranty"  element={<WarrantyPage />} />
+                <Route path="/privacy"   element={<PrivacyPage />} />
+                <Route path="/payment"   element={<PaymentPage />} />
                 <Route path="/product/:slug" element={<ProductPage />} />
-                <Route path="*"          element={<Placeholder title="Страница не найдена" />} />
+                <Route path="*"          element={<Navigate to="/" replace />} />
               </Routes>
             </Layout>
           }

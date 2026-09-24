@@ -13,6 +13,8 @@ const DEFAULTS = {
   contact_address:        'Петергоф, Ропшинское ш., 8Г, 198517',
   contact_inn:            '780534396013',
   contact_ogrnip:         '325784700428266',
+  contact_email:          'info@alduin-workshop.ru',
+  contact_legal_name:     'ИП Морозов Владислав Сергеевич',
   social_vk:              'https://vk.com/alduin_workshop',
   social_tg:              'https://t.me/alduin_workshop',
   social_yt:              'https://youtube.com/@alduln_workshop?si=F9XkPmBBNxbPs9e2',
@@ -21,6 +23,10 @@ const DEFAULTS = {
   warranty_return_text:   'Дорогие покупатели Мастерской Алдуин! В соответствии со ст. 26.1 Закона «О защите прав потребителей» вы можете вернуть товар, если он не относится к категории изделий с индивидуально-определёнными свойствами, не был в употреблении, полностью сохранены его товарный вид, потребительские качества, все бирки, документы об оплате и заводская упаковка.',
   warranty_period_title:  'Гарантийный срок',
   warranty_period_text:   'Срок гарантии — 12 месяцев. Если за этот период обнаружится производственный брак, мы проведём бесплатный ремонт. В случае невозможности ремонта — заменим изделие новым аналогом либо вернём полную стоимость. Гарантия не действует при естественном износе, возникшем в процессе использования, а также при поломках из-за неправильной эксплуатации. Мы дорожим своей репутацией и делаем всё, чтобы вы остались довольны качеством нашей продукции.',
+  privacy_title:          'Политика конфиденциальности',
+  privacy_text:           '',
+  payment_title:          'Оплата и доставка',
+  payment_text:           '',
   developer_name:         'Владислав Морозов',
   developer_url:          'http://x90461p7.beget.tech/',
 }
@@ -30,6 +36,7 @@ const TABS = [
   { key: 'about',    label: 'О мастерской' },
   { key: 'contacts', label: 'Контакты'     },
   { key: 'warranty', label: 'Гарантия'     },
+  { key: 'legal',    label: 'Документы'    },
 ]
 
 /* ── Поле формы ────────────────────────────────────────────────────────────── */
@@ -112,18 +119,18 @@ export default function AdminSiteSettings() {
           <div>
             <h1 className="text-xl font-bold text-gray-900">Настройки сайта</h1>
             <p className="text-xs text-gray-400 mt-0.5">
-              Тексты, контакты, соцсети, гарантия
+              Тексты, контакты, соцсети, гарантия, юридические документы
             </p>
           </div>
         </div>
 
         {/* Вкладки */}
-        <div className="flex gap-1 mb-5 bg-gray-100 rounded-xl p-1">
+        <div className="flex gap-1 mb-5 bg-gray-100 rounded-xl p-1 overflow-x-auto">
           {TABS.map(t => (
             <button
               key={t.key}
               onClick={() => setTab(t.key)}
-              className={`flex-1 py-2 rounded-lg text-sm font-semibold transition-colors
+              className={`flex-1 min-w-max py-2 px-3 rounded-lg text-sm font-semibold transition-colors
                 ${tab === t.key
                   ? 'bg-white text-gray-900 shadow-sm'
                   : 'text-gray-500 hover:text-gray-700'}`}
@@ -178,6 +185,10 @@ export default function AdminSiteSettings() {
               </Field>
             </div>
 
+            <Field label="E-mail" hint="контактный адрес электронной почты">
+              <input className={inputCls} type="email" value={form.contact_email} onChange={set('contact_email')} placeholder="info@alduin-workshop.ru" />
+            </Field>
+
             <Field label="Адрес">
               <input className={inputCls} value={form.contact_address} onChange={set('contact_address')} placeholder="Петергоф, Ропшинское ш., 8Г" />
             </Field>
@@ -190,6 +201,10 @@ export default function AdminSiteSettings() {
                 <input className={inputCls} value={form.contact_ogrnip} onChange={set('contact_ogrnip')} placeholder="325784700428266" />
               </Field>
             </div>
+
+            <Field label="Полное наименование ИП" hint="отображается в реквизитах и подвале">
+              <input className={inputCls} value={form.contact_legal_name} onChange={set('contact_legal_name')} placeholder="ИП Морозов Владислав Сергеевич" />
+            </Field>
 
             <div className="pt-2 border-t border-gray-100">
               <p className="text-xs font-semibold uppercase tracking-wider text-gray-500 mb-3">
@@ -270,6 +285,56 @@ export default function AdminSiteSettings() {
                 placeholder="Гарантийные условия..."
               />
             </Field>
+          </div>
+        )}
+
+        {/* ── ВКЛАДКА: Юридические документы ──────────────── */}
+        {tab === 'legal' && (
+          <div className="space-y-5 bg-white rounded-2xl border border-gray-100 p-5 shadow-sm">
+            <p className="text-xs text-gray-400 leading-relaxed">
+              Тексты отображаются на страницах{' '}
+              <code className="bg-gray-100 px-1 rounded">/privacy</code> и{' '}
+              <code className="bg-gray-100 px-1 rounded">/payment</code>.
+              Оставьте пустым — страница покажет заглушку.
+            </p>
+
+            <Field label="Заголовок: Политика конфиденциальности">
+              <input
+                className={inputCls}
+                value={form.privacy_title}
+                onChange={set('privacy_title')}
+                placeholder="Политика конфиденциальности"
+              />
+            </Field>
+            <Field label="Текст: Политика конфиденциальности" hint="поддерживает переносы строк">
+              <textarea
+                className={textareaCls}
+                rows={10}
+                value={form.privacy_text}
+                onChange={set('privacy_text')}
+                placeholder="Вставьте финальный текст политики конфиденциальности..."
+              />
+            </Field>
+
+            <div className="pt-2 border-t border-gray-100 space-y-5">
+              <Field label="Заголовок: Оплата и доставка">
+                <input
+                  className={inputCls}
+                  value={form.payment_title}
+                  onChange={set('payment_title')}
+                  placeholder="Оплата и доставка"
+                />
+              </Field>
+              <Field label="Текст: Оплата и доставка" hint="поддерживает переносы строк">
+                <textarea
+                  className={textareaCls}
+                  rows={10}
+                  value={form.payment_text}
+                  onChange={set('payment_text')}
+                  placeholder="Вставьте финальный текст об оплате и доставке..."
+                />
+              </Field>
+            </div>
           </div>
         )}
 

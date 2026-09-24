@@ -67,6 +67,9 @@ export default function CheckoutPage() {
     comment: '',
   })
 
+  // Согласие с офертой и политикой конфиденциальности
+  const [agreed, setAgreed] = useState(false)
+
   // Состояния CDEK: Поиск города
   const [cityQuery, setCityQuery]             = useState('')
   const [cities, setCities]                   = useState([])
@@ -245,6 +248,11 @@ export default function CheckoutPage() {
 
     if (!selectedPvz) {
       setError('Пожалуйста, выберите пункт выдачи заказов (ПВЗ) СДЭК.')
+      return
+    }
+
+    if (!agreed) {
+      setError('Пожалуйста, подтвердите согласие с офертой и политикой конфиденциальности.')
       return
     }
 
@@ -618,12 +626,43 @@ export default function CheckoutPage() {
               </div>
             )}
 
+            {/* Согласие с офертой */}
+            <div className="pt-2">
+              <label className="flex items-start gap-3 cursor-pointer group">
+                <input
+                  type="checkbox"
+                  checked={agreed}
+                  onChange={e => setAgreed(e.target.checked)}
+                  className="mt-0.5 w-4 h-4 flex-shrink-0 accent-amber-500 cursor-pointer"
+                />
+                <span className="text-forge-muted font-body text-xs leading-relaxed">
+                  Я ознакомился(ась) с{' '}
+                  <Link
+                    to="/payment"
+                    target="_blank"
+                    className="text-forge-primary hover:text-forge-gold-lt underline underline-offset-2 transition-colors"
+                  >
+                    условиями оплаты и доставки
+                  </Link>{' '}
+                  и{' '}
+                  <Link
+                    to="/privacy"
+                    target="_blank"
+                    className="text-forge-primary hover:text-forge-gold-lt underline underline-offset-2 transition-colors"
+                  >
+                    политикой конфиденциальности
+                  </Link>
+                  , и даю согласие на обработку персональных данных.
+                </span>
+              </label>
+            </div>
+
             {/* Кнопка отправки */}
             <div className="pt-2">
               <button
                 type="submit"
-                disabled={loading || isCalculating}
-                className="btn-gold w-full sm:w-auto justify-center"
+                disabled={loading || isCalculating || !agreed}
+                className="btn-gold w-full sm:w-auto justify-center disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {loading ? (
                   <span className="flex items-center gap-2">
@@ -634,9 +673,6 @@ export default function CheckoutPage() {
                   `Оформить заказ на ${finalTotalFormatted} →`
                 )}
               </button>
-              <p className="text-forge-muted/40 font-body text-xs mt-3 leading-relaxed">
-                Нажимая кнопку, вы соглашаетесь с условиями обработки персональных данных.
-              </p>
               <p className="mt-2">
                 <Link
                   to="/warranty"

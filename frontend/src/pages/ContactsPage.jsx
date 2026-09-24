@@ -1,25 +1,27 @@
 import { useState, useEffect } from 'react'
+import { Link } from 'react-router-dom'
 import { api } from '../api/axios'
 
 /* ── Значения по умолчанию ─────────────────────────────────────────────────── */
 const DEFAULTS = {
-  contact_text:    'Купить готовые изделия или заказать что-то нестандартное можно по телефонам:',
-  contact_phone1:  '+79500082208',
-  contact_phone2:  '+79202091993',
-  contact_address: 'Петергоф, Ропшинское ш., 8Г, 198517',
-  contact_inn:     '780534396013',
-  contact_ogrnip:  '325784700428266',
-  social_vk:       'https://vk.com/alduin_workshop',
-  social_tg:       'https://t.me/alduin_workshop',
-  social_yt:       'https://youtube.com/@alduln_workshop?si=F9XkPmBBNxbPs9e2',
-  social_rutube:   'https://rutube.ru/channel/48354889',
-  developer_name:  'Владислав Морозов',
-  developer_url:   'http://x90461p7.beget.tech/',
+  contact_text:       'Купить готовые изделия или заказать что-то нестандартное можно по телефонам:',
+  contact_phone1:     '+79500082208',
+  contact_phone2:     '+79202091993',
+  contact_address:    'Петергоф, Ропшинское ш., 8Г, 198517',
+  contact_inn:        '780534396013',
+  contact_ogrnip:     '325784700428266',
+  contact_email:      'info@alduin-workshop.ru',
+  contact_legal_name: 'ИП Морозов Владислав Сергеевич',
+  social_vk:          'https://vk.com/alduin_workshop',
+  social_tg:          'https://t.me/alduin_workshop',
+  social_yt:          'https://youtube.com/@alduln_workshop?si=F9XkPmBBNxbPs9e2',
+  social_rutube:      'https://rutube.ru/channel/48354889',
+  developer_name:     'Владислав Морозов',
+  developer_url:      'http://x90461p7.beget.tech/',
 }
 
 /* ── Форматирование номера для отображения ──────────────────────────────────── */
 function formatPhone(raw) {
-  // +79500082208 → +7 950 008-22-08
   const digits = raw.replace(/\D/g, '')
   if (digits.length === 11 && digits[0] === '7') {
     return `+7 ${digits.slice(1, 4)} ${digits.slice(4, 7)}-${digits.slice(7, 9)}-${digits.slice(9, 11)}`
@@ -156,9 +158,24 @@ export default function ContactsPage() {
             )}
           </div>
 
+          {/* E-mail */}
+          {s.contact_email && (
+            <div className="mt-6">
+              <p className="text-forge-muted text-xs tracking-[0.2em] uppercase font-body mb-2">
+                E-mail
+              </p>
+              <a
+                href={`mailto:${s.contact_email}`}
+                className="text-forge-muted font-body text-sm hover:text-forge-primary transition-colors duration-200"
+              >
+                {s.contact_email}
+              </a>
+            </div>
+          )}
+
           {/* Адрес */}
           {s.contact_address && (
-            <div className="mt-8">
+            <div className="mt-6">
               <p className="text-forge-muted text-xs tracking-[0.2em] uppercase font-body mb-2">
                 Адрес
               </p>
@@ -169,11 +186,14 @@ export default function ContactsPage() {
           )}
 
           {/* Реквизиты */}
-          {(s.contact_inn || s.contact_ogrnip) && (
+          {(s.contact_legal_name || s.contact_inn || s.contact_ogrnip) && (
             <div className="mt-6">
               <p className="text-forge-muted text-xs tracking-[0.2em] uppercase font-body mb-2">
                 Реквизиты
               </p>
+              {s.contact_legal_name && (
+                <p className="text-forge-muted font-body text-xs mb-1">{s.contact_legal_name}</p>
+              )}
               {s.contact_inn && (
                 <p className="text-forge-muted font-body text-xs">ИНН {s.contact_inn}</p>
               )}
@@ -183,7 +203,7 @@ export default function ContactsPage() {
             </div>
           )}
 
-          {/* Разработчик — та же серая гарнитура, тот же размер, без иконок */}
+          {/* Разработчик */}
           {s.developer_name && (
             <div className="mt-4">
               <p className="text-forge-muted font-body text-xs">
@@ -203,6 +223,22 @@ export default function ContactsPage() {
               </p>
             </div>
           )}
+
+          {/* Юридические ссылки */}
+          <div className="mt-8 pt-6 border-t border-forge-border/40 flex flex-col gap-2">
+            <Link to="/warranty"
+              className="text-forge-muted font-body text-xs hover:text-forge-primary transition-colors underline underline-offset-2">
+              Гарантия и возврат
+            </Link>
+            <Link to="/privacy"
+              className="text-forge-muted font-body text-xs hover:text-forge-primary transition-colors underline underline-offset-2">
+              Политика конфиденциальности
+            </Link>
+            <Link to="/payment"
+              className="text-forge-muted font-body text-xs hover:text-forge-primary transition-colors underline underline-offset-2">
+              Оплата и доставка
+            </Link>
+          </div>
         </div>
 
         {/* ── Социальные сети ────────────────────────────────────────── */}
