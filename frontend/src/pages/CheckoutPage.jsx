@@ -207,7 +207,7 @@ export default function CheckoutPage() {
     try {
       const { data } = await api.post('/delivery/calculate', {
         city_code: selectedCity.code,
-        weight: totalWeight,
+        weight_grams: totalWeight,
       })
       setDeliveryCost(Number(data.delivery_sum) || 0)
       setDeliveryPeriod({
@@ -216,8 +216,10 @@ export default function CheckoutPage() {
       })
     } catch (err) {
       console.error('Ошибка расчёта доставки СДЭК:', err)
-      setDeliveryError('Не удалось точно рассчитать стоимость. Будет уточнен при подтверждении.')
-      setDeliveryCost(450) // стандартный базовый тариф по умолчанию
+      const errorMsg = err.response?.data?.detail || 'Не удалось рассчитать доставку, попробуйте позже'
+      setDeliveryError(errorMsg)
+      setDeliveryCost(0)
+      setDeliveryPeriod(null)
     } finally {
       setIsCalculating(false)
     }
@@ -248,6 +250,16 @@ export default function CheckoutPage() {
 
     if (!selectedPvz) {
       setError('Пожалуйста, выберите пункт выдачи заказов (ПВЗ) СДЭК.')
+      return
+    }
+
+    if (deliveryError) {
+      setError(deliveryError)
+      return
+    }
+
+    if (!deliveryCost || deliveryCost <= 0) {
+      setError('Не удалось рассчитать доставку, попробуйте позже. Оформление заказа невозможно.')
       return
     }
 
@@ -661,7 +673,7 @@ export default function CheckoutPage() {
             <div className="pt-2">
               <button
                 type="submit"
-                disabled={loading || isCalculating || !agreed}
+                disabled={loading || isCalculating || !agreed || !!deliveryError || !deliveryCost || deliveryCost <= 0}
                 className="btn-gold w-full sm:w-auto justify-center disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {loading ? (

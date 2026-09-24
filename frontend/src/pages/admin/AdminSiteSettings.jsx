@@ -29,6 +29,13 @@ const DEFAULTS = {
   payment_text:           '',
   developer_name:         'Владислав Морозов',
   developer_url:          'http://x90461p7.beget.tech/',
+  cdek_sender_city_code:  '137',
+  cdek_sender_name:       'ИП Морозов Владислав Сергеевич',
+  cdek_sender_phone:      '+79500082208',
+  cdek_delivery_type:     'pvz',
+  cdek_sender_pvz_code:   'SPB137',
+  cdek_sender_address:    'Петергоф, Ропшинское ш., 8Г',
+  cdek_tariff_codes:      '136, 368, 234',
 }
 
 /* ── Вкладки ───────────────────────────────────────────────────────────────── */
@@ -37,6 +44,7 @@ const TABS = [
   { key: 'contacts', label: 'Контакты'     },
   { key: 'warranty', label: 'Гарантия'     },
   { key: 'legal',    label: 'Документы'    },
+  { key: 'delivery', label: 'Доставка СДЭК' },
 ]
 
 /* ── Поле формы ────────────────────────────────────────────────────────────── */
@@ -335,6 +343,106 @@ export default function AdminSiteSettings() {
                 />
               </Field>
             </div>
+          </div>
+        )}
+
+        {/* ── ВКЛАДКА: Доставка СДЭК ──────────────── */}
+        {tab === 'delivery' && (
+          <div className="space-y-5 bg-white rounded-2xl border border-gray-100 p-5 shadow-sm">
+            <p className="text-xs text-gray-500 leading-relaxed">
+              Настройки интеграции СДЭК: данные отправителя и тарифы по вашему договору.
+              Обязательны для автоматического оформления накладных и вызова курьера.
+            </p>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <Field label="Код города отправителя" hint="137 — Санкт-Петербург, 44 — Москва">
+                <input
+                  className={inputCls}
+                  value={form.cdek_sender_city_code}
+                  onChange={set('cdek_sender_city_code')}
+                  placeholder="137"
+                />
+              </Field>
+
+              <Field label="Тарифы СДЭК (коды через запятую)" hint="под ваш договор со СДЭК">
+                <input
+                  className={inputCls}
+                  value={form.cdek_tariff_codes}
+                  onChange={set('cdek_tariff_codes')}
+                  placeholder="136, 368, 234"
+                />
+              </Field>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <Field label="Имя / название отправителя" hint="ФИО ИП или название организации">
+                <input
+                  className={inputCls}
+                  value={form.cdek_sender_name}
+                  onChange={set('cdek_sender_name')}
+                  placeholder="ИП Морозов Владислав Сергеевич"
+                />
+              </Field>
+
+              <Field label="Телефон отправителя" hint="для связи курьера / СДЭК">
+                <input
+                  className={inputCls}
+                  value={form.cdek_sender_phone}
+                  onChange={set('cdek_sender_phone')}
+                  placeholder="+79500082208"
+                />
+              </Field>
+            </div>
+
+            <div className="pt-2 border-t border-gray-100">
+              <Field label="Способ передачи посылок в СДЭК">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-1">
+                  <label className={`flex items-center gap-2.5 p-3 rounded-xl border cursor-pointer transition-all ${form.cdek_delivery_type === 'pvz' ? 'bg-orange-50/50 border-orange-400 text-orange-950 font-semibold' : 'bg-gray-50/50 border-gray-200 text-gray-700'}`}>
+                    <input
+                      type="radio"
+                      name="cdek_delivery_type"
+                      value="pvz"
+                      checked={form.cdek_delivery_type === 'pvz'}
+                      onChange={set('cdek_delivery_type')}
+                      className="text-orange-600 focus:ring-orange-500"
+                    />
+                    <span>Отправка из офиса / ПВЗ СДЭК</span>
+                  </label>
+
+                  <label className={`flex items-center gap-2.5 p-3 rounded-xl border cursor-pointer transition-all ${form.cdek_delivery_type === 'courier' ? 'bg-orange-50/50 border-orange-400 text-orange-950 font-semibold' : 'bg-gray-50/50 border-gray-200 text-gray-700'}`}>
+                    <input
+                      type="radio"
+                      name="cdek_delivery_type"
+                      value="courier"
+                      checked={form.cdek_delivery_type === 'courier'}
+                      onChange={set('cdek_delivery_type')}
+                      className="text-orange-600 focus:ring-orange-500"
+                    />
+                    <span>Вызов курьера СДЭК (от двери)</span>
+                  </label>
+                </div>
+              </Field>
+            </div>
+
+            {form.cdek_delivery_type === 'pvz' ? (
+              <Field label="Код пункта отправления (ПВЗ / склад СДЭК)" hint="код офиса СДЭК, куда вы сдаёте посылки">
+                <input
+                  className={inputCls}
+                  value={form.cdek_sender_pvz_code}
+                  onChange={set('cdek_sender_pvz_code')}
+                  placeholder="например, SPB137"
+                />
+              </Field>
+            ) : (
+              <Field label="Адрес забора посылок курьером СДЭК" hint="точный адрес мастерской/склада">
+                <input
+                  className={inputCls}
+                  value={form.cdek_sender_address}
+                  onChange={set('cdek_sender_address')}
+                  placeholder="Петергоф, Ропшинское ш., 8Г"
+                />
+              </Field>
+            )}
           </div>
         )}
 

@@ -78,3 +78,14 @@ def _create_payment_sync(
 async def create_payment(**kwargs: Any) -> str:
     """Создаёт платеж YooKassa без блокировки async event loop."""
     return await asyncio.to_thread(_create_payment_sync, **kwargs)
+
+
+def _get_payment_sync(payment_id: str) -> Any:
+    _configure()
+    return Payment.find_one(payment_id)
+
+
+async def get_payment(payment_id: str) -> Any:
+    """Запрашивает статус и данные платежа по ID напрямую из API ЮKassa."""
+    return await asyncio.to_thread(_get_payment_sync, payment_id)
+

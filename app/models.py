@@ -18,10 +18,11 @@ class ArticleType(str, enum.Enum):
 
 
 class OrderStatus(str, enum.Enum):
-    pending   = "pending"
-    paid      = "paid"
-    shipped   = "shipped"
-    cancelled = "cancelled"
+    pending       = "pending"
+    paid          = "paid"
+    in_production = "in_production"
+    shipped       = "shipped"
+    cancelled     = "cancelled"
 
 
 # ── Category ──────────────────────────────────────────────────────────────────
@@ -54,6 +55,10 @@ class Product(Base):
     description: Mapped[str | None]   = mapped_column(sa.Text, nullable=True)
     image_url:   Mapped[str | None]   = mapped_column(sa.String(512), nullable=True)
     in_stock:    Mapped[bool]         = mapped_column(sa.Boolean, nullable=False, default=True, server_default=sa.true())
+    weight_grams: Mapped[int | None]  = mapped_column(sa.Integer, nullable=True)
+    length_cm:    Mapped[int | None]  = mapped_column(sa.Integer, nullable=True)
+    width_cm:     Mapped[int | None]  = mapped_column(sa.Integer, nullable=True)
+    height_cm:    Mapped[int | None]  = mapped_column(sa.Integer, nullable=True)
     category_id: Mapped[int | None]   = mapped_column(
         sa.Integer, sa.ForeignKey("categories.id", ondelete="SET NULL"), nullable=True, index=True
     )
@@ -198,6 +203,10 @@ class Order(Base):
     )
     total_amount: Mapped[Decimal]     = mapped_column(sa.Numeric(12, 2), nullable=False)
     payment_id:   Mapped[str | None]  = mapped_column(sa.String(128), nullable=True)
+    cdek_uuid:    Mapped[str | None]  = mapped_column(sa.String(64), nullable=True)
+    cdek_number:  Mapped[str | None]  = mapped_column(sa.String(64), nullable=True, index=True)
+    cdek_status:  Mapped[str | None]  = mapped_column(sa.String(64), nullable=True)
+    cdek_error:   Mapped[str | None]  = mapped_column(sa.Text, nullable=True)
     created_at:   Mapped[datetime]    = mapped_column(
         sa.DateTime(timezone=True),
         nullable=False,

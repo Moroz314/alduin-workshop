@@ -36,6 +36,10 @@ class ProductBase(BaseModel):
     description: str | None  = Field(default=None)
     image_url:   str | None  = Field(default=None)
     in_stock:    bool        = Field(default=True)
+    weight_grams: int | None = Field(default=None, ge=1)
+    length_cm:    int | None = Field(default=None, ge=1)
+    width_cm:     int | None = Field(default=None, ge=1)
+    height_cm:    int | None = Field(default=None, ge=1)
     category_id: int | None  = Field(default=None)
 
 class ProductCreate(ProductBase):
@@ -47,6 +51,10 @@ class ProductUpdate(BaseModel):
     description: str | None     = Field(default=None)
     image_url:   str | None     = Field(default=None)
     in_stock:    bool | None    = Field(default=None)
+    weight_grams: int | None    = None
+    length_cm:    int | None    = None
+    width_cm:     int | None    = None
+    height_cm:    int | None    = None
     category_id: int | None     = Field(default=None)
     images: list[str] | None = None
 
@@ -205,6 +213,10 @@ class OrderRead(BaseModel):
     status:       OrderStatus
     total_amount: Decimal
     payment_id:   str | None
+    cdek_uuid:    str | None = None
+    cdek_number:  str | None = None
+    cdek_status:  str | None = None
+    cdek_error:   str | None = None
     created_at:   datetime
     items:        list[OrderItemRead] = []
 

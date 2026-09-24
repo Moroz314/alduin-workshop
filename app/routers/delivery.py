@@ -2,8 +2,12 @@
 from __future__ import annotations
 
 import logging
-from fastapi import APIRouter, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.database import get_db
+from app.models import SiteSettings
 from app.schemas import (
     CdekCityRead,
     CdekPvzRead,
@@ -49,17 +53,22 @@ async def get_pvz(
 
 @router.post("/calculate", response_model=DeliveryCalculateResponse, summary="Расчет стоимости доставки СДЭК")
 async def calculate_delivery(
-    payload: DeliveryCalculateRequest
+    payload: DeliveryCalculateRequest,
+    db: AsyncSession = Depends(get_db),
 ) -> DeliveryCalculateResponse:
     try:
+        res = await db.execute(select(SiteSettings))
+        site_reqs = {r.key: r.value for r in res.scalars().all()}
+
         result = await cdek_service.calculate_delivery(
             city_code=payload.city_code,
             weight_grams=payload.weight_grams,
+            site_requisites=site_reqs,
         )
         return DeliveryCalculateResponse(**result)
     except Exception as exc:
-        logger.error("Ошибка при расчете доставки СДЭК: %s", exc)
+        logger.error("Ошибка при расчете доставки СДЭК для города %s: %s", payload.city_code, exc)
         raise HTTPException(
-            status_code=status.HTTP_502_BAD_GATEWAY,
-            detail="Не удалось рассчитать стоимость доставки СДЭК",
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Не удалось рассчитать доставку, попробуйте позже",
         ) from exc

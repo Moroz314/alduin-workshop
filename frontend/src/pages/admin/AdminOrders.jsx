@@ -1,27 +1,41 @@
 import { useState, useEffect, useCallback } from 'react'
-import { Phone, Clock, ShoppingBag, MapPin, Truck, Mail } from 'lucide-react'
+import {
+  Phone,
+  Clock,
+  ShoppingBag,
+  MapPin,
+  Truck,
+  Mail,
+  ExternalLink,
+  Printer,
+  RefreshCw,
+  PackageCheck,
+  AlertCircle,
+} from 'lucide-react'
 import AdminLayout from '../../components/admin/AdminLayout'
 import { adminApi } from '../../api/axios'
 
 const STATUS_CONFIG = {
-  pending:   { label: 'Новый',     color: 'bg-yellow-100 text-yellow-800 border-yellow-200' },
-  paid:      { label: 'Оплачен',   color: 'bg-blue-100 text-blue-800 border-blue-200'       },
-  shipped:   { label: 'Отправлен', color: 'bg-green-100 text-green-800 border-green-200'    },
-  cancelled: { label: 'Отменён',   color: 'bg-red-100 text-red-800 border-red-200'          },
+  pending:       { label: 'Новый',           color: 'bg-yellow-100 text-yellow-800 border-yellow-200' },
+  paid:          { label: 'Оплачен',         color: 'bg-blue-100 text-blue-800 border-blue-200'       },
+  in_production: { label: 'В изготовлении',   color: 'bg-purple-100 text-purple-800 border-purple-200' },
+  shipped:       { label: 'Отправлен',       color: 'bg-green-100 text-green-800 border-green-200'    },
+  cancelled:     { label: 'Отменён',         color: 'bg-red-100 text-red-800 border-red-200'          },
 }
 
 /* Допустимые переходы статуса */
 const NEXT_STATUSES = {
-  pending:   ['paid', 'cancelled'],
-  paid:      ['shipped', 'cancelled'],
-  shipped:   [],
-  cancelled: [],
+  pending:       ['paid', 'in_production', 'cancelled'],
+  paid:          ['in_production', 'shipped', 'cancelled'],
+  in_production: ['shipped', 'cancelled'],
+  shipped:       [],
+  cancelled:     [],
 }
 
 /* ══════════════════════════════════════════════════════════════
    КАРТОЧКА ЗАКАЗА
    ══════════════════════════════════════════════════════════════ */
-function OrderCard({ order, onStatusChange }) {
+function OrderCard({ order, onOrderUpdated }) {
   const [loading, setLoading] = useState(false)
 
   const cfg   = STATUS_CONFIG[order.status] || STATUS_CONFIG.pending
@@ -39,11 +53,56 @@ function OrderCard({ order, onStatusChange }) {
   const handleStatus = async (status) => {
     setLoading(true)
     try {
-      await adminApi.patch(`/admin/orders/${order.id}/status`, { status })
-      onStatusChange(order.id, status)
+      const { data } = await adminApi.patch(`/admin/orders/${order.id}/status`, { status })
+      onOrderUpdated(data)
     } catch (err) {
       alert(err.response?.data?.detail ?? 'Ошибка смены статуса')
-    } finally { setLoading(false) }
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleCreateCdek = async () => {
+    setLoading(true)
+    try {
+      const { data } = await adminApi.post(`/admin/orders/${order.id}/create-cdek`)
+      onOrderUpdated(data)
+      alert(data.cdek_number ? `Заказ успешно оформлен в СДЭК! Трек-номер: ${data.cdek_number}` : 'Заказ отправлен в СДЭК на обработку.')
+    } catch (err) {
+      alert(err.response?.data?.detail ?? 'Ошибка при обращении к СДЭК')
+      // Обновляем заказ чтобы отобразилась ошибка cdek_error
+      try {
+        const { data: refreshed } = await adminApi.get(`/admin/orders/${order.id}`)
+        onOrderUpdated(refreshed)
+      } catch { /* ignore */ }
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handlePrintCdek = async () => {
+    try {
+      const { data } = await adminApi.get(`/admin/orders/${order.id}/cdek-print`)
+      if (data.print_url) {
+        window.open(data.print_url, '_blank')
+      } else {
+        alert('Ссылка на печать еще не готова, попробуйте через несколько секунд')
+      }
+    } catch (err) {
+      alert(err.response?.data?.detail ?? 'Не удалось получить квитанцию СДЭК')
+    }
+  }
+
+  const handleRefreshCdek = async () => {
+    setLoading(true)
+    try {
+      const { data } = await adminApi.post(`/admin/orders/${order.id}/cdek-refresh`)
+      onOrderUpdated(data)
+    } catch (err) {
+      alert(err.response?.data?.detail ?? 'Ошибка обновления данных СДЭК')
+    } finally {
+      setLoading(false)
+    }
   }
 
   return (
@@ -80,7 +139,7 @@ function OrderCard({ order, onStatusChange }) {
           )}
         </div>
 
-        {/* ── ТОВАРЫ В ЗАКАЗЕ (ВСЕГДА ВИДНЫ В ЦЕНТРЕ КАРТОЧКИ) ──────── */}
+        {/* ── ТОВАРЫ В ЗАКАЗЕ ──────── */}
         <div className="bg-amber-50/60 border border-amber-200/80 rounded-xl p-3.5 mb-3.5">
           <div className="flex items-center justify-between mb-2 pb-1.5 border-b border-amber-200/50">
             <span className="text-xs font-bold uppercase tracking-wider text-amber-950 flex items-center gap-1.5">
@@ -143,6 +202,68 @@ function OrderCard({ order, onStatusChange }) {
             </span>
           </div>
 
+          {/* Отображение статуса СДЭК и номера накладной */}
+          {order.cdek_number && (
+            <div className="mt-2 pt-2 border-t border-gray-200 flex flex-wrap items-center justify-between gap-2">
+              <div className="flex items-center gap-2">
+                <span className="font-semibold text-gray-700">№ СДЭК:</span>
+                <a
+                  href={`https://www.cdek.ru/ru/tracking?order_id=${order.cdek_number}`}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="font-mono font-bold text-orange-600 hover:underline flex items-center gap-1"
+                >
+                  {order.cdek_number} <ExternalLink size={12} />
+                </a>
+                {order.cdek_status && (
+                  <span className="text-[10px] font-semibold px-2 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-200">
+                    {order.cdek_status}
+                  </span>
+                )}
+              </div>
+              <div className="flex items-center gap-1.5">
+                <button
+                  type="button"
+                  onClick={handlePrintCdek}
+                  className="px-2.5 py-1 text-[11px] font-semibold text-gray-700 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 flex items-center gap-1 shadow-2xs"
+                >
+                  <Printer size={12} /> Квитанция
+                </button>
+                <button
+                  type="button"
+                  onClick={handleRefreshCdek}
+                  disabled={loading}
+                  title="Обновить статус СДЭК"
+                  className="p-1 text-gray-500 hover:text-gray-800 rounded-lg border border-gray-200 hover:bg-gray-50"
+                >
+                  <RefreshCw size={12} className={loading ? 'animate-spin' : ''} />
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Ошибка СДЭК */}
+          {order.cdek_error && (
+            <div className="mt-2 p-2.5 rounded-lg bg-red-50 border border-red-200 text-red-800 text-xs">
+              <div className="flex items-start justify-between gap-2">
+                <div className="flex items-start gap-1.5">
+                  <AlertCircle size={14} className="text-red-600 shrink-0 mt-0.5" />
+                  <div>
+                    <span className="font-bold">Ошибка СДЭК:</span> {order.cdek_error}
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={handleCreateCdek}
+                  disabled={loading}
+                  className="shrink-0 px-2.5 py-1 bg-red-600 text-white font-bold rounded text-[11px] hover:bg-red-700 transition"
+                >
+                  {loading ? '...' : 'Повторить'}
+                </button>
+              </div>
+            </div>
+          )}
+
           {order.comment && (
             <div className="text-gray-600 italic pt-1.5 border-t border-gray-200/50">
               «{order.comment}»
@@ -164,6 +285,36 @@ function OrderCard({ order, onStatusChange }) {
           </div>
         </div>
       </div>
+
+      {/* Кнопка «Готово к отправке» для товаров в изготовлении */}
+      {order.status === 'in_production' && (
+        <div className="px-5 pb-3">
+          <button
+            type="button"
+            onClick={handleCreateCdek}
+            disabled={loading}
+            className="w-full py-2.5 px-4 rounded-xl text-xs font-bold bg-amber-600 hover:bg-amber-700 text-white shadow-sm flex items-center justify-center gap-2 transition active:scale-98 disabled:opacity-50"
+          >
+            <PackageCheck size={16} />
+            {loading ? 'Регистрация в СДЭК...' : '📦 Готово к отправке (оформить СДЭК)'}
+          </button>
+        </div>
+      )}
+
+      {/* Кнопка создания заказа СДЭК для оплаченных заказов без трек-номера */}
+      {order.status === 'paid' && !order.cdek_number && (
+        <div className="px-5 pb-3">
+          <button
+            type="button"
+            onClick={handleCreateCdek}
+            disabled={loading}
+            className="w-full py-2.5 px-4 rounded-xl text-xs font-bold bg-blue-600 hover:bg-blue-700 text-white shadow-sm flex items-center justify-center gap-2 transition active:scale-98 disabled:opacity-50"
+          >
+            <Truck size={16} />
+            {loading ? 'Создание в СДЭК...' : '🚚 Создать заказ в СДЭК'}
+          </button>
+        </div>
+      )}
 
       {/* Кнопки смены статуса */}
       {nexts.length > 0 && (
@@ -234,9 +385,9 @@ export default function AdminOrders() {
 
   useEffect(() => { load() }, [load])
 
-  const handleStatusChange = (orderId, newStatus) => {
+  const handleOrderUpdated = (updatedOrder) => {
     setOrders(prev => prev.map(o =>
-      o.id === orderId ? { ...o, status: newStatus } : o
+      o.id === updatedOrder.id ? updatedOrder : o
     ))
   }
 
@@ -264,7 +415,7 @@ export default function AdminOrders() {
               <OrderCard
                 key={order.id}
                 order={order}
-                onStatusChange={handleStatusChange}
+                onOrderUpdated={handleOrderUpdated}
               />
             ))}
           </div>

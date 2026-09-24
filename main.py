@@ -56,6 +56,30 @@ async def lifespan(app: FastAPI):
                     sa.text("ALTER TABLE orders ADD COLUMN IF NOT EXISTS pvz_code VARCHAR(64);")
                 )
                 await conn.execute(
+                    sa.text("ALTER TABLE orders ADD COLUMN IF NOT EXISTS cdek_uuid VARCHAR(64);")
+                )
+                await conn.execute(
+                    sa.text("ALTER TABLE orders ADD COLUMN IF NOT EXISTS cdek_number VARCHAR(64);")
+                )
+                await conn.execute(
+                    sa.text("ALTER TABLE orders ADD COLUMN IF NOT EXISTS cdek_status VARCHAR(64);")
+                )
+                await conn.execute(
+                    sa.text("ALTER TABLE orders ADD COLUMN IF NOT EXISTS cdek_error TEXT;")
+                )
+                await conn.execute(
+                    sa.text("ALTER TABLE products ADD COLUMN IF NOT EXISTS weight_grams INTEGER;")
+                )
+                await conn.execute(
+                    sa.text("ALTER TABLE products ADD COLUMN IF NOT EXISTS length_cm INTEGER;")
+                )
+                await conn.execute(
+                    sa.text("ALTER TABLE products ADD COLUMN IF NOT EXISTS width_cm INTEGER;")
+                )
+                await conn.execute(
+                    sa.text("ALTER TABLE products ADD COLUMN IF NOT EXISTS height_cm INTEGER;")
+                )
+                await conn.execute(
                     sa.text("""
                         CREATE TABLE IF NOT EXISTS training_sections (
                             id SERIAL PRIMARY KEY,
@@ -79,6 +103,15 @@ async def lifespan(app: FastAPI):
                         );
                     """)
                 )
+            # Добавляем новое значение 'in_production' в enum order_status (вне транзакции)
+            try:
+                async with engine.connect() as auto_conn:
+                    await auto_conn.execution_options(isolation_level="AUTOCOMMIT")
+                    await auto_conn.execute(
+                        sa.text("ALTER TYPE order_status ADD VALUE IF NOT EXISTS 'in_production';")
+                    )
+            except Exception as e_enum:
+                logger.debug("Enum update notice: %s", e_enum)
             break
         except Exception as exc:
             if attempt == 10:

@@ -40,6 +40,14 @@ ALLOWED_KEYS: set[str] = {
     "payment_text",
     "developer_name",
     "developer_url",
+    # Настройки СДЭК и отправителя
+    "cdek_sender_city_code",
+    "cdek_sender_name",
+    "cdek_sender_phone",
+    "cdek_delivery_type",
+    "cdek_sender_pvz_code",
+    "cdek_sender_address",
+    "cdek_tariff_codes",
 }
 
 # ── Значения по умолчанию (используются пока таблица пуста) ──────────────────
@@ -104,6 +112,14 @@ DEFAULTS: dict[str, str] = {
     ),
     "developer_name": "Владислав Морозов",
     "developer_url": "http://x90461p7.beget.tech/",
+    # Настройки СДЭК и отправителя
+    "cdek_sender_city_code": "137",
+    "cdek_sender_name": "ИП Морозов Владислав Сергеевич",
+    "cdek_sender_phone": "+79500082208",
+    "cdek_delivery_type": "pvz",  # "pvz" (отправка из офиса/ПВЗ) или "courier" (вызов курьера)
+    "cdek_sender_pvz_code": "SPB137",
+    "cdek_sender_address": "Петергоф, Ропшинское ш., 8Г",
+    "cdek_tariff_codes": "136, 368, 234",
 }
 
 
