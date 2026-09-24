@@ -106,8 +106,8 @@ app = FastAPI(
 
 _extra_origins = [o.strip() for o in os.getenv("ALLOWED_ORIGINS", "").split(",") if o.strip()]
 ALLOWED_ORIGINS = list(dict.fromkeys([
-    "http://5.35.91.123",
-    "https://5.35.91.123",
+    "http://139.100.224.102",
+    "https://139.100.224.102",
     "http://localhost",
     "http://localhost:5173",
     "http://localhost:3000",
