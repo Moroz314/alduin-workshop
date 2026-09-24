@@ -20,7 +20,7 @@ from app.routers.settings import ALLOWED_KEYS, DEFAULTS
 router = APIRouter()
 
 # Ключи, значение которых должно быть валидным URL (или пустой строкой)
-URL_KEYS: set[str] = {"social_vk", "social_tg", "social_yt", "social_rutube"}
+URL_KEYS: set[str] = {"social_vk", "social_tg", "social_yt", "social_rutube", "developer_url"}
 
 _URL_RE = re.compile(r"^https?://[^\s]{3,}$", re.IGNORECASE)
 

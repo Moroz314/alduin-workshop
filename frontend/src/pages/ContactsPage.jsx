@@ -13,6 +13,8 @@ const DEFAULTS = {
   social_tg:       'https://t.me/alduin_workshop',
   social_yt:       'https://youtube.com/@alduln_workshop?si=F9XkPmBBNxbPs9e2',
   social_rutube:   'https://rutube.ru/channel/48354889',
+  developer_name:  'Владислав Морозов',
+  developer_url:   'http://x90461p7.beget.tech/',
 }
 
 /* ── Форматирование номера для отображения ──────────────────────────────────── */
@@ -178,6 +180,27 @@ export default function ContactsPage() {
               {s.contact_ogrnip && (
                 <p className="text-forge-muted font-body text-xs">ОГРНИП {s.contact_ogrnip}</p>
               )}
+            </div>
+          )}
+
+          {/* Разработчик — та же серая гарнитура, тот же размер, без иконок */}
+          {s.developer_name && (
+            <div className="mt-4">
+              <p className="text-forge-muted font-body text-xs">
+                Сайт разработан:{' '}
+                {s.developer_url ? (
+                  <a
+                    href={s.developer_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="hover:text-forge-primary transition-colors duration-200 underline underline-offset-2"
+                  >
+                    {s.developer_name}
+                  </a>
+                ) : (
+                  s.developer_name
+                )}
+              </p>
             </div>
           )}
         </div>

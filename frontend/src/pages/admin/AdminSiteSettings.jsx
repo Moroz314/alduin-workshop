@@ -21,6 +21,8 @@ const DEFAULTS = {
   warranty_return_text:   'Дорогие покупатели Мастерской Алдуин! В соответствии со ст. 26.1 Закона «О защите прав потребителей» вы можете вернуть товар, если он не относится к категории изделий с индивидуально-определёнными свойствами, не был в употреблении, полностью сохранены его товарный вид, потребительские качества, все бирки, документы об оплате и заводская упаковка.',
   warranty_period_title:  'Гарантийный срок',
   warranty_period_text:   'Срок гарантии — 12 месяцев. Если за этот период обнаружится производственный брак, мы проведём бесплатный ремонт. В случае невозможности ремонта — заменим изделие новым аналогом либо вернём полную стоимость. Гарантия не действует при естественном износе, возникшем в процессе использования, а также при поломках из-за неправильной эксплуатации. Мы дорожим своей репутацией и делаем всё, чтобы вы остались довольны качеством нашей продукции.',
+  developer_name:         'Владислав Морозов',
+  developer_url:          'http://x90461p7.beget.tech/',
 }
 
 /* ── Вкладки ───────────────────────────────────────────────────────────────── */
@@ -205,6 +207,33 @@ export default function AdminSiteSettings() {
                 </Field>
                 <Field label="Rutube" hint="https://rutube.ru/...">
                   <input className={inputCls} value={form.social_rutube} onChange={set('social_rutube')} placeholder="https://rutube.ru/channel/..." />
+                </Field>
+              </div>
+            </div>
+
+            <div className="pt-2 border-t border-gray-100">
+              <p className="text-xs font-semibold uppercase tracking-wider text-gray-500 mb-3">
+                Разработчик{' '}
+                <span className="font-normal normal-case tracking-normal text-gray-400">
+                  — строка в подвале страницы контактов; оставьте пустым, чтобы скрыть
+                </span>
+              </p>
+              <div className="space-y-3">
+                <Field label="Имя разработчика">
+                  <input
+                    className={inputCls}
+                    value={form.developer_name}
+                    onChange={set('developer_name')}
+                    placeholder="Владислав Морозов"
+                  />
+                </Field>
+                <Field label="Ссылка" hint="http:// или https://">
+                  <input
+                    className={inputCls}
+                    value={form.developer_url}
+                    onChange={set('developer_url')}
+                    placeholder="http://x90461p7.beget.tech/"
+                  />
                 </Field>
               </div>
             </div>

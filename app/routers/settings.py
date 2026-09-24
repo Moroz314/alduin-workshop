@@ -32,6 +32,8 @@ ALLOWED_KEYS: set[str] = {
     "warranty_return_text",
     "warranty_period_title",
     "warranty_period_text",
+    "developer_name",
+    "developer_url",
 }
 
 # ── Значения по умолчанию (используются пока таблица пуста) ──────────────────
@@ -69,6 +71,8 @@ DEFAULTS: dict[str, str] = {
         "эксплуатации. Мы дорожим своей репутацией и делаем всё, чтобы вы остались довольны "
         "качеством нашей продукции."
     ),
+    "developer_name": "Владислав Морозов",
+    "developer_url": "http://x90461p7.beget.tech/",
 }
 
 
