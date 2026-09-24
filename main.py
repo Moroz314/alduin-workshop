@@ -30,6 +30,12 @@ from app.routers.admin import settings   as admin_settings
 
 settings = get_settings()
 
+# ── Swagger/OpenAPI: отключаем в продакшне (DEBUG=false) ─────────────────────
+_debug = os.getenv("DEBUG", "false").lower() in ("1", "true", "yes")
+_docs_url    = "/api/docs"         if _debug else None
+_redoc_url   = "/api/redoc"        if _debug else None
+_openapi_url = "/api/openapi.json" if _debug else None
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -98,23 +104,30 @@ app = FastAPI(
     title="Мастерская Алдуин — API",
     description="Backend интернет-магазина кожаных и кованых изделий",
     version="0.3.0",
-    docs_url="/api/docs",
-    redoc_url="/api/redoc",
-    openapi_url="/api/openapi.json",
+    docs_url=_docs_url,
+    redoc_url=_redoc_url,
+    openapi_url=_openapi_url,
     lifespan=lifespan,
 )
 
+# ── CORS ──────────────────────────────────────────────────────────────────────
+# Продакшн: только HTTPS-домен из переменной окружения ALLOWED_ORIGINS.
+# Разработка: дополнительно разрешаем localhost-адреса.
 _extra_origins = [o.strip() for o in os.getenv("ALLOWED_ORIGINS", "").split(",") if o.strip()]
-ALLOWED_ORIGINS = list(dict.fromkeys([
-    "http://139.100.224.102",
-    "https://139.100.224.102",
-    "http://localhost",
-    "http://localhost:5173",
-    "http://localhost:3000",
-    "http://127.0.0.1:5173",
-    "http://localhost:8000",
-    *_extra_origins,
-]))
+
+if _debug:
+    # Локальная разработка — разрешаем стандартные порты Vite / CRA
+    _dev_origins = [
+        "http://localhost",
+        "http://localhost:5173",
+        "http://localhost:3000",
+        "http://127.0.0.1:5173",
+        "http://localhost:8000",
+    ]
+else:
+    _dev_origins = []
+
+ALLOWED_ORIGINS = list(dict.fromkeys([*_extra_origins, *_dev_origins]))
 
 app.add_middleware(
     CORSMiddleware,

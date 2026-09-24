@@ -1,0 +1,9 @@
+# alduin-workshop.ru — основной домен, HTTPS с автоматическим сертификатом Let's Encrypt
+alduin-workshop.ru {
+    reverse_proxy frontend:80
+}
+
+# www.alduin-workshop.ru — постоянный редирект (301) на основной домен без www
+www.alduin-workshop.ru {
+    redir https://alduin-workshop.ru{uri} permanent
+}
