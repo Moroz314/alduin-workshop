@@ -17,15 +17,21 @@ router = APIRouter()
 async def get_products(
     category_id: int | None = Query(default=None, description="ID категории для фильтрации"),
     in_stock: bool | None = Query(default=None, description="Только товары в наличии"),
-    limit: int = Query(default=50, ge=1, le=200),
+    search: str | None = Query(default=None, description="Поиск по названию или описанию"),
+    q: str | None = Query(default=None, description="Поиск (алиас)"),
+    limit: int = Query(default=100, ge=1, le=500),
     offset: int = Query(default=0, ge=0),
     db: AsyncSession = Depends(get_db),
 ) -> list[Product]:
-    stmt = select(Product).order_by(Product.name)
+    stmt = select(Product).order_by(Product.sort_order.asc(), Product.id.asc())
     if category_id is not None:
         stmt = stmt.where(Product.category_id == category_id)
     if in_stock is not None:
         stmt = stmt.where(Product.in_stock == in_stock)
+    search_query = search or q
+    if search_query and search_query.strip():
+        term = f"%{search_query.strip()}%"
+        stmt = stmt.where(Product.name.ilike(term) | Product.description.ilike(term))
     stmt = stmt.limit(limit).offset(offset)
     result = await db.execute(stmt)
     return result.scalars().all()

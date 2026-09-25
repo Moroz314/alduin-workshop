@@ -36,6 +36,7 @@ class ProductBase(BaseModel):
     description: str | None  = Field(default=None)
     image_url:   str | None  = Field(default=None)
     in_stock:    bool        = Field(default=True)
+    sort_order:  int         = Field(default=0)
     weight_grams: int | None = Field(default=None, ge=1)
     length_cm:    int | None = Field(default=None, ge=1)
     width_cm:     int | None = Field(default=None, ge=1)
@@ -51,6 +52,7 @@ class ProductUpdate(BaseModel):
     description: str | None     = Field(default=None)
     image_url:   str | None     = Field(default=None)
     in_stock:    bool | None    = Field(default=None)
+    sort_order:  int | None     = Field(default=None)
     weight_grams: int | None    = None
     length_cm:    int | None    = None
     width_cm:     int | None    = None
@@ -75,6 +77,13 @@ class ProductRead(ProductBase):
 class ProductListRead(ProductBase):
     model_config = ConfigDict(from_attributes=True)
     id: int
+
+class ProductReorderItem(BaseModel):
+    id: int = Field(..., description="ID товара")
+    sort_order: int = Field(..., description="Порядковый номер")
+
+class ProductReorderRequest(BaseModel):
+    items: list[ProductReorderItem]
 
 
 # ── Review ────────────────────────────────────────────────────────────────────

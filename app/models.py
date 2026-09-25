@@ -55,6 +55,7 @@ class Product(Base):
     description: Mapped[str | None]   = mapped_column(sa.Text, nullable=True)
     image_url:   Mapped[str | None]   = mapped_column(sa.String(512), nullable=True)
     in_stock:    Mapped[bool]         = mapped_column(sa.Boolean, nullable=False, default=True, server_default=sa.true())
+    sort_order:  Mapped[int]          = mapped_column(sa.Integer, nullable=False, default=0, server_default="0", index=True)
     weight_grams: Mapped[int | None]  = mapped_column(sa.Integer, nullable=True)
     length_cm:    Mapped[int | None]  = mapped_column(sa.Integer, nullable=True)
     width_cm:     Mapped[int | None]  = mapped_column(sa.Integer, nullable=True)

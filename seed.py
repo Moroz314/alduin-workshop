@@ -123,7 +123,10 @@ async def seed():
             print(f"  + Категория: {cat.name}")
 
         # Товары
+        cat_order_counter = {}
         for p_data in PRODUCTS:
+            c_id = cat_map[p_data["category_slug"]]
+            cat_order_counter[c_id] = cat_order_counter.get(c_id, 0) + 1
             product = Product(
                 name=p_data["name"],
                 slug=p_data["slug"],
@@ -131,11 +134,12 @@ async def seed():
                 description=p_data["description"],
                 image_url=p_data["image_url"],
                 in_stock=p_data["in_stock"],
-                category_id=cat_map[p_data["category_slug"]],
+                category_id=c_id,
+                sort_order=cat_order_counter[c_id],
             )
             session.add(product)
             stock = "+" if p_data["in_stock"] else "-"
-            print(f"  [{stock}] Товар: {product.name} — {product.price} руб.")
+            print(f"  [{stock}] Товар: {product.name} — {product.price} руб. (sort_order={product.sort_order})")
 
         await session.commit()
         print(f"\n>>> Готово! Добавлено {len(CATEGORIES)} категорий и {len(PRODUCTS)} товаров.")

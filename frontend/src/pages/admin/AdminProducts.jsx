@@ -1,5 +1,35 @@
-import { useState, useEffect, useCallback, useRef } from 'react'
-import { Plus, Pencil, Trash2, X, Check, ImageOff, ChevronDown, Package, Tag, Upload, Image as ImageIcon } from 'lucide-react'
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
+import {
+  Plus,
+  Pencil,
+  Trash2,
+  X,
+  Check,
+  ImageOff,
+  ChevronDown,
+  ChevronUp,
+  Package,
+  Tag,
+  Upload,
+  Image as ImageIcon,
+  GripVertical,
+} from 'lucide-react'
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+} from '@dnd-kit/core'
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  verticalListSortingStrategy,
+  useSortable,
+} from '@dnd-kit/sortable'
+import { CSS } from '@dnd-kit/utilities'
 import ReactQuill from 'react-quill-new'
 import 'react-quill-new/dist/quill.snow.css'
 import AdminLayout from '../../components/admin/AdminLayout'
@@ -33,20 +63,101 @@ const slugify = (s) =>
 /* ══════════════════════════════════════════════════════════════
    КАРТОЧКА ТОВАРА
    ══════════════════════════════════════════════════════════════ */
-function ProductCard({ product, onEdit, onDelete }) {
+function SortableProductCard({
+  product,
+  index,
+  total,
+  categoryName,
+  onMoveUp,
+  onMoveDown,
+  onEdit,
+  onDelete,
+}) {
   const [confirmDelete, setConfirmDelete] = useState(false)
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: product.id })
+
+  const style = {
+    transform: CSS.Translate.toString(transform),
+    transition,
+    opacity: isDragging ? 0.4 : 1,
+    zIndex: isDragging ? 40 : 'auto',
+  }
 
   const price = Number(product.price).toLocaleString('ru-RU', {
     style: 'currency', currency: 'RUB', maximumFractionDigits: 0,
   })
 
   return (
-    <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-      <div className="flex gap-3 p-4">
+    <div
+      ref={setNodeRef}
+      style={style}
+      className={`bg-white rounded-2xl shadow-sm border transition-shadow ${
+        isDragging ? 'border-orange-500 shadow-lg' : 'border-gray-100'
+      } overflow-hidden`}
+    >
+      <div className="flex items-center gap-2 p-3 sm:p-4">
+        {/* Ручка Drag-and-Drop */}
+        <div
+          {...attributes}
+          {...listeners}
+          className="flex-shrink-0 p-1.5 text-gray-400 hover:text-gray-700 active:text-orange-600 cursor-grab active:cursor-grabbing touch-none select-none rounded-lg"
+          title="Перетащите мышью или пальцем для изменения порядка"
+          aria-label="Перетащить товар"
+        >
+          <GripVertical size={20} />
+        </div>
+
+        {/* Запасной вариант для мобильных: стрелки "вверх/вниз" */}
+        <div className="flex flex-col items-center justify-center gap-0.5 flex-shrink-0">
+          <button
+            type="button"
+            onClick={() => onMoveUp(index)}
+            disabled={index === 0}
+            className={`p-1 rounded-md transition-colors ${
+              index === 0
+                ? 'text-gray-200 cursor-not-allowed'
+                : 'text-gray-500 hover:bg-gray-100 hover:text-gray-900 active:bg-gray-200'
+            }`}
+            title="Переместить выше"
+            aria-label="Переместить выше"
+          >
+            <ChevronUp size={18} />
+          </button>
+          <button
+            type="button"
+            onClick={() => onMoveDown(index)}
+            disabled={index === total - 1}
+            className={`p-1 rounded-md transition-colors ${
+              index === total - 1
+                ? 'text-gray-200 cursor-not-allowed'
+                : 'text-gray-500 hover:bg-gray-100 hover:text-gray-900 active:bg-gray-200'
+            }`}
+            title="Переместить ниже"
+            aria-label="Переместить ниже"
+          >
+            <ChevronDown size={18} />
+          </button>
+        </div>
+
+        {/* Номер позиции */}
+        <div
+          className="flex-shrink-0 w-7 h-7 rounded-lg bg-gray-100 text-gray-600 flex items-center justify-center text-xs font-mono font-bold"
+          title={`Порядковый номер: #${index + 1}`}
+        >
+          {index + 1}
+        </div>
+
         {/* Миниатюра */}
-        <div className="w-16 h-16 rounded-xl bg-gray-100 flex-shrink-0 overflow-hidden flex items-center justify-center">
+        <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-xl bg-gray-100 flex-shrink-0 overflow-hidden flex items-center justify-center">
           {product.image_url ? (
-            <img src={product.image_url} alt={product.name} className="w-full h-full object-cover" />
+            <img src={product.image_url} alt={product.name} className="w-full h-full object-cover pointer-events-none" />
           ) : (
             <ImageOff size={20} className="text-gray-300" />
           )}
@@ -65,9 +176,9 @@ function ProductCard({ product, onEdit, onDelete }) {
               {product.in_stock ? 'В наличии' : 'Под заказ'}
             </span>
           </div>
-          {product.category_id && (
-            <div className="text-xs text-gray-400 mt-0.5">
-              Категория ID: {product.category_id}
+          {categoryName && (
+            <div className="text-xs text-gray-400 mt-0.5 truncate">
+              {categoryName}
             </div>
           )}
         </div>
@@ -77,13 +188,13 @@ function ProductCard({ product, onEdit, onDelete }) {
       {!confirmDelete ? (
         <div className="flex border-t border-gray-100">
           <button onClick={() => onEdit(product)}
-            className="flex-1 flex items-center justify-center gap-2 py-3
+            className="flex-1 flex items-center justify-center gap-2 py-2.5 sm:py-3
                        text-sm font-semibold text-blue-600 active:bg-blue-50 transition-colors">
             <Pencil size={16} /> Изменить
           </button>
           <div className="w-px bg-gray-100" />
           <button onClick={() => setConfirmDelete(true)}
-            className="flex-1 flex items-center justify-center gap-2 py-3
+            className="flex-1 flex items-center justify-center gap-2 py-2.5 sm:py-3
                        text-sm font-semibold text-red-500 active:bg-red-50 transition-colors">
             <Trash2 size={16} /> Удалить
           </button>
@@ -91,13 +202,13 @@ function ProductCard({ product, onEdit, onDelete }) {
       ) : (
         <div className="flex border-t border-gray-100 bg-red-50">
           <button onClick={() => setConfirmDelete(false)}
-            className="flex-1 flex items-center justify-center gap-2 py-3
+            className="flex-1 flex items-center justify-center gap-2 py-2.5 sm:py-3
                        text-sm font-semibold text-gray-500">
             <X size={16} /> Отмена
           </button>
           <div className="w-px bg-red-100" />
           <button onClick={() => { setConfirmDelete(false); onDelete(product.id) }}
-            className="flex-1 flex items-center justify-center gap-2 py-3
+            className="flex-1 flex items-center justify-center gap-2 py-2.5 sm:py-3
                        text-sm font-bold text-red-600">
             <Trash2 size={16} /> Удалить!
           </button>
@@ -584,10 +695,27 @@ function CategoriesTab() {
    ВКЛАДКА ТОВАРОВ
    ══════════════════════════════════════════════════════════════ */
 function ProductsTab() {
-  const [products,   setProducts]   = useState([])
-  const [categories, setCategories] = useState([])
-  const [loading,    setLoading]    = useState(true)
-  const [modal,      setModal]      = useState(null)
+  const [products,           setProducts]           = useState([])
+  const [categories,         setCategories]         = useState([])
+  const [loading,            setLoading]            = useState(true)
+  const [modal,              setModal]              = useState(null)
+  const [selectedCategoryId, setSelectedCategoryId] = useState('all')
+  const [saveStatus,         setSaveStatus]         = useState(null) // null | 'saving' | 'saved' | 'error'
+  const [errorMessage,       setErrorMessage]       = useState('')
+
+  const debounceTimeoutRef  = useRef(null)
+  const previousProductsRef = useRef([])
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 5,
+      },
+    }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  )
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -597,6 +725,7 @@ function ProductsTab() {
         adminApi.get('/admin/categories/'),
       ])
       setProducts(pr.data)
+      previousProductsRef.current = pr.data
       setCategories(cr.data)
     } catch (err) {
       console.error('Ошибка загрузки:', err)
@@ -604,6 +733,93 @@ function ProductsTab() {
   }, [])
 
   useEffect(() => { load() }, [load])
+
+  const categoriesMap = useMemo(() => {
+    const map = {}
+    categories.forEach(c => { map[c.id] = c.name })
+    return map
+  }, [categories])
+
+  const filteredProducts = useMemo(() => {
+    if (selectedCategoryId === 'all') return products
+    if (selectedCategoryId === 'none') return products.filter(p => !p.category_id)
+    return products.filter(p => p.category_id === selectedCategoryId)
+  }, [products, selectedCategoryId])
+
+  const handleReorder = (newFilteredItems) => {
+    const rollbackSnapshot = [...products]
+
+    let updatedAllProducts
+    if (selectedCategoryId === 'all') {
+      updatedAllProducts = newFilteredItems.map((p, idx) => ({
+        ...p,
+        sort_order: idx + 1,
+      }))
+    } else {
+      const updatedMap = new Map()
+      newFilteredItems.forEach((p, idx) => {
+        updatedMap.set(p.id, { ...p, sort_order: idx + 1 })
+      })
+      updatedAllProducts = products.map(p => updatedMap.get(p.id) || p)
+      updatedAllProducts.sort((a, b) => a.sort_order - b.sort_order || a.id - b.id)
+    }
+
+    setProducts(updatedAllProducts)
+    setSaveStatus('saving')
+
+    if (debounceTimeoutRef.current) {
+      clearTimeout(debounceTimeoutRef.current)
+    }
+
+    debounceTimeoutRef.current = setTimeout(async () => {
+      try {
+        const payload = newFilteredItems.map((p, idx) => ({
+          id: p.id,
+          sort_order: idx + 1,
+        }))
+        await adminApi.patch('/admin/products/reorder', payload)
+        previousProductsRef.current = updatedAllProducts
+        setSaveStatus('saved')
+        setTimeout(() => {
+          setSaveStatus(s => s === 'saved' ? null : s)
+        }, 2500)
+      } catch (err) {
+        console.error('Ошибка сохранения порядка:', err)
+        setProducts(rollbackSnapshot)
+        setSaveStatus('error')
+        setErrorMessage(err.response?.data?.detail ?? 'Не удалось сохранить порядок. Позиции возвращены.')
+        setTimeout(() => {
+          setSaveStatus(s => s === 'error' ? null : s)
+          setErrorMessage('')
+        }, 4000)
+      }
+    }, 400)
+  }
+
+  const handleDragEnd = (event) => {
+    const { active, over } = event
+    if (!over || active.id === over.id) return
+
+    const oldIndex = filteredProducts.findIndex(p => p.id === active.id)
+    const newIndex = filteredProducts.findIndex(p => p.id === over.id)
+
+    if (oldIndex !== -1 && newIndex !== -1) {
+      const reordered = arrayMove(filteredProducts, oldIndex, newIndex)
+      handleReorder(reordered)
+    }
+  }
+
+  const handleMoveUp = (index) => {
+    if (index <= 0) return
+    const reordered = arrayMove(filteredProducts, index, index - 1)
+    handleReorder(reordered)
+  }
+
+  const handleMoveDown = (index) => {
+    if (index >= filteredProducts.length - 1) return
+    const reordered = arrayMove(filteredProducts, index, index + 1)
+    handleReorder(reordered)
+  }
 
   const handleDelete = async (id) => {
     try {
@@ -616,35 +832,150 @@ function ProductsTab() {
 
   return (
     <div className="px-4 py-4">
+      {/* Шапка вкладки */}
       <div className="flex items-center justify-between mb-4">
-        <h2 className="text-xl font-bold text-gray-900">
-          Товары {!loading && <span className="text-gray-400 font-normal text-base">({products.length})</span>}
-        </h2>
+        <div>
+          <h2 className="text-xl font-bold text-gray-900">
+            Товары {!loading && <span className="text-gray-400 font-normal text-base">({products.length})</span>}
+          </h2>
+          <p className="text-xs text-gray-500 mt-0.5">
+            Перетаскивайте карточки мышью или используйте стрелки для задания порядка
+          </p>
+        </div>
         <button onClick={() => setModal('new')}
           className="flex items-center gap-2 bg-orange-600 text-white text-sm font-semibold
-                     px-4 py-2.5 rounded-xl active:bg-orange-700 transition-colors">
+                     px-4 py-2.5 rounded-xl active:bg-orange-700 transition-colors flex-shrink-0">
           <Plus size={18} /> Создать товар
         </button>
       </div>
 
+      {/* Индикатор сохранения порядка */}
+      {saveStatus && (
+        <div className={`flex items-center gap-2 px-3.5 py-2.5 rounded-xl text-xs font-semibold mb-4 transition-all duration-300 ${
+          saveStatus === 'saving'
+            ? 'bg-blue-50 text-blue-700 border border-blue-100 shadow-sm'
+            : saveStatus === 'saved'
+            ? 'bg-green-50 text-green-700 border border-green-200 shadow-sm'
+            : 'bg-red-50 text-red-700 border border-red-200 shadow-sm'
+        }`}>
+          {saveStatus === 'saving' && (
+            <>
+              <span className="animate-spin w-3.5 h-3.5 border-2 border-blue-600 border-t-transparent rounded-full flex-shrink-0" />
+              <span>Сохранение нового порядка...</span>
+            </>
+          )}
+          {saveStatus === 'saved' && (
+            <>
+              <Check size={16} className="text-green-600 flex-shrink-0" />
+              <span>Порядок сохранён</span>
+            </>
+          )}
+          {saveStatus === 'error' && (
+            <>
+              <X size={16} className="text-red-600 flex-shrink-0" />
+              <span>{errorMessage || 'Ошибка сохранения порядка. Позиции возвращены назад.'}</span>
+            </>
+          )}
+        </div>
+      )}
+
+      {/* Фильтр по категориям для настройки порядка внутри каждой категории */}
+      {categories.length > 0 && (
+        <div className="mb-4 bg-gray-50 p-2.5 rounded-2xl border border-gray-100">
+          <div className="flex items-center justify-between mb-2 px-1">
+            <span className="text-[11px] font-bold text-gray-500 uppercase tracking-wider">
+              Настройка порядка по категориям:
+            </span>
+            {selectedCategoryId !== 'all' && (
+              <span className="text-[11px] text-orange-600 font-medium">
+                Порядок уникален внутри выбранной категории
+              </span>
+            )}
+          </div>
+          <div className="flex items-center gap-1.5 overflow-x-auto pb-1">
+            <button
+              type="button"
+              onClick={() => setSelectedCategoryId('all')}
+              className={`px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-colors ${
+                selectedCategoryId === 'all'
+                  ? 'bg-orange-600 text-white shadow-sm'
+                  : 'bg-white text-gray-600 border border-gray-200 hover:border-orange-300'
+              }`}
+            >
+              Все ({products.length})
+            </button>
+            {categories.map(c => {
+              const count = products.filter(p => p.category_id === c.id).length
+              return (
+                <button
+                  key={c.id}
+                  type="button"
+                  onClick={() => setSelectedCategoryId(c.id)}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-colors ${
+                    selectedCategoryId === c.id
+                      ? 'bg-orange-600 text-white shadow-sm'
+                      : 'bg-white text-gray-600 border border-gray-200 hover:border-orange-300'
+                  }`}
+                >
+                  {c.name} ({count})
+                </button>
+              )
+            })}
+            {products.some(p => !p.category_id) && (
+              <button
+                type="button"
+                onClick={() => setSelectedCategoryId('none')}
+                className={`px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-colors ${
+                  selectedCategoryId === 'none'
+                    ? 'bg-orange-600 text-white shadow-sm'
+                    : 'bg-white text-gray-600 border border-gray-200 hover:border-orange-300'
+                }`}
+              >
+                Без категории ({products.filter(p => !p.category_id).length})
+              </button>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Список товаров */}
       {loading ? (
         <div className="space-y-3">
-          {[1,2,3].map(i => <div key={i} className="bg-white rounded-2xl h-24 animate-pulse" />)}
+          {[1, 2, 3].map(i => <div key={i} className="bg-white rounded-2xl h-24 animate-pulse" />)}
         </div>
-      ) : products.length === 0 ? (
+      ) : filteredProducts.length === 0 ? (
         <div className="text-center py-20 text-gray-400">
           <Package size={48} className="mx-auto mb-3 opacity-30" />
-          <p className="font-medium">Товаров пока нет</p>
+          <p className="font-medium">В этой категории пока нет товаров</p>
           <p className="text-sm mt-1">Нажмите «Создать товар», чтобы добавить первый</p>
         </div>
       ) : (
-        <div className="space-y-3">
-          {products.map(p => (
-            <ProductCard key={p.id} product={p}
-              onEdit={() => setModal(p)}
-              onDelete={handleDelete} />
-          ))}
-        </div>
+        <DndContext
+          sensors={sensors}
+          collisionDetection={closestCenter}
+          onDragEnd={handleDragEnd}
+        >
+          <SortableContext
+            items={filteredProducts.map(p => p.id)}
+            strategy={verticalListSortingStrategy}
+          >
+            <div className="space-y-3">
+              {filteredProducts.map((p, idx) => (
+                <SortableProductCard
+                  key={p.id}
+                  product={p}
+                  index={idx}
+                  total={filteredProducts.length}
+                  categoryName={categoriesMap[p.category_id] || ''}
+                  onMoveUp={handleMoveUp}
+                  onMoveDown={handleMoveDown}
+                  onEdit={() => setModal(p)}
+                  onDelete={handleDelete}
+                />
+              ))}
+            </div>
+          </SortableContext>
+        </DndContext>
       )}
 
       {modal && (
