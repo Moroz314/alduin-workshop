@@ -397,31 +397,247 @@ function ProductModal({ product, categories, onClose, onSaved }) {
 }
 
 /* ══════════════════════════════════════════════════════════════
+   КАРТОЧКА КАТЕГОРИИ (DRAGGABLE & SORTABLE)
+   ══════════════════════════════════════════════════════════════ */
+function SortableCategoryCard({
+  cat,
+  index,
+  total,
+  editId,
+  editName,
+  setEditName,
+  editSlug,
+  setEditSlug,
+  editImage,
+  setEditImage,
+  uploadingEdit,
+  editFileInputRef,
+  handleEditFileSelect,
+  handleSaveEdit,
+  setEditId,
+  handleDelete,
+  onMoveUp,
+  onMoveDown,
+}) {
+  const isEditing = editId === cat.id
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: cat.id, disabled: isEditing })
+
+  const style = {
+    transform: CSS.Translate.toString(transform),
+    transition,
+    opacity: isDragging ? 0.4 : 1,
+    zIndex: isDragging ? 40 : 'auto',
+  }
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className={`bg-white rounded-xl border transition-shadow ${
+        isDragging ? 'border-orange-500 shadow-lg' : 'border-gray-100'
+      } overflow-hidden`}
+    >
+      {isEditing ? (
+        /* Режим редактирования */
+        <div className="p-3 space-y-3">
+          <input className="admin-input text-sm py-2.5" value={editName}
+            onChange={e => setEditName(e.target.value)} />
+          <input className="admin-input font-mono text-xs py-2.5" value={editSlug}
+            onChange={e => setEditSlug(e.target.value)} />
+
+          {/* Редактирование фото */}
+          <div>
+            <p className="text-xs text-gray-400 mb-1.5">Фото категории:</p>
+            {editImage ? (
+              <div className="relative inline-block">
+                <img src={editImage} alt="Фото категории" className="w-20 h-20 rounded-xl object-cover border border-gray-200" />
+                <button
+                  type="button"
+                  onClick={() => setEditImage(null)}
+                  className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-red-600 text-white flex items-center justify-center text-xs shadow"
+                >
+                  <X size={12} />
+                </button>
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={() => editFileInputRef.current?.click()}
+                disabled={uploadingEdit}
+                className="flex items-center gap-1.5 px-3 py-2 rounded-lg border border-dashed border-gray-300 text-xs text-gray-600 hover:border-orange-500 hover:text-orange-600"
+              >
+                {uploadingEdit ? (
+                  <span className="animate-spin w-3 h-3 border-2 border-orange-500 border-t-transparent rounded-full" />
+                ) : (
+                  <Upload size={14} />
+                )}
+                <span>{uploadingEdit ? 'Загрузка...' : '+ Добавить фото'}</span>
+              </button>
+            )}
+            <input
+              ref={editFileInputRef}
+              type="file"
+              accept="image/jpeg,image/png,image/webp,image/gif"
+              onChange={handleEditFileSelect}
+              className="hidden"
+            />
+          </div>
+
+          <div className="flex gap-2">
+            <button onClick={() => handleSaveEdit(cat.id)}
+              className="flex-1 py-2.5 rounded-xl bg-green-600 text-white text-sm font-bold active:bg-green-700">
+              Сохранить
+            </button>
+            <button onClick={() => setEditId(null)}
+              className="flex-1 py-2.5 rounded-xl bg-gray-100 text-gray-600 text-sm font-semibold">
+              Отмена
+            </button>
+          </div>
+        </div>
+      ) : (
+        /* Обычный вид со строкой порядка */
+        <div className="flex items-center px-3 py-3 gap-2.5">
+          {/* Ручка Drag-and-Drop */}
+          <div
+            {...attributes}
+            {...listeners}
+            className="flex-shrink-0 p-1.5 text-gray-400 hover:text-gray-700 active:text-orange-600 cursor-grab active:cursor-grabbing touch-none select-none rounded-lg"
+            title="Перетащите для изменения порядка кнопок категорий в каталоге"
+            aria-label="Перетащить категорию"
+          >
+            <GripVertical size={18} />
+          </div>
+
+          {/* Стрелки вверх / вниз */}
+          <div className="flex flex-col items-center justify-center gap-0.5 flex-shrink-0">
+            <button
+              type="button"
+              onClick={() => onMoveUp(index)}
+              disabled={index === 0}
+              className={`p-1 rounded-md transition-colors ${
+                index === 0
+                  ? 'text-gray-200 cursor-not-allowed'
+                  : 'text-gray-500 hover:bg-gray-100 hover:text-gray-900 active:bg-gray-200'
+              }`}
+              title="Переместить выше / левее в каталоге"
+              aria-label="Переместить выше"
+            >
+              <ChevronUp size={16} />
+            </button>
+            <button
+              type="button"
+              onClick={() => onMoveDown(index)}
+              disabled={index === total - 1}
+              className={`p-1 rounded-md transition-colors ${
+                index === total - 1
+                  ? 'text-gray-200 cursor-not-allowed'
+                  : 'text-gray-500 hover:bg-gray-100 hover:text-gray-900 active:bg-gray-200'
+              }`}
+              title="Переместить ниже / правее в каталоге"
+              aria-label="Переместить ниже"
+            >
+              <ChevronDown size={16} />
+            </button>
+          </div>
+
+          {/* Номер позиции кнопки */}
+          <div
+            className="flex-shrink-0 w-6 h-6 rounded-lg bg-gray-100 text-gray-600 flex items-center justify-center text-xs font-mono font-bold"
+            title={`Позиция кнопки: #${index + 1}`}
+          >
+            {index + 1}
+          </div>
+
+          {/* Миниатюра */}
+          {cat.image_url ? (
+            <img src={cat.image_url} alt={cat.name} className="w-11 h-11 rounded-xl object-cover bg-gray-100 border border-gray-200 flex-shrink-0 pointer-events-none" />
+          ) : (
+            <div className="w-11 h-11 rounded-xl bg-gray-100 border border-gray-200 flex items-center justify-center flex-shrink-0 text-gray-400">
+              <ImageIcon size={18} />
+            </div>
+          )}
+
+          {/* Название и slug */}
+          <div className="flex-1 min-w-0">
+            <p className="font-semibold text-gray-900 text-sm leading-tight truncate">{cat.name}</p>
+            <p className="text-xs text-gray-400 font-mono mt-0.5 truncate">{cat.slug}</p>
+          </div>
+
+          {/* Кнопки действий */}
+          <div className="flex items-center gap-1 flex-shrink-0">
+            <button
+              onClick={() => { setEditId(cat.id); setEditName(cat.name); setEditSlug(cat.slug); setEditImage(cat.image_url || null) }}
+              className="p-2 text-blue-500 hover:bg-blue-50 active:bg-blue-100 rounded-lg transition-colors"
+              aria-label="Редактировать категорию"
+              title="Редактировать"
+            >
+              <Pencil size={16} />
+            </button>
+            <button
+              onClick={() => handleDelete(cat.id)}
+              className="p-2 text-red-500 hover:bg-red-50 active:bg-red-100 rounded-lg transition-colors"
+              aria-label="Удалить категорию"
+              title="Удалить"
+            >
+              <Trash2 size={16} />
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
+/* ══════════════════════════════════════════════════════════════
    УПРАВЛЕНИЕ КАТЕГОРИЯМИ
    ══════════════════════════════════════════════════════════════ */
 function CategoriesTab() {
-  const [categories, setCategories] = useState([])
-  const [loading,    setLoading]    = useState(true)
-  const [newName,    setNewName]    = useState('')
-  const [newSlug,    setNewSlug]    = useState('')
-  const [newImage,   setNewImage]   = useState(null)
+  const [categories,   setCategories]   = useState([])
+  const [loading,      setLoading]      = useState(true)
+  const [newName,      setNewName]      = useState('')
+  const [newSlug,      setNewSlug]      = useState('')
+  const [newImage,     setNewImage]     = useState(null)
   const [uploadingNew, setUploadingNew] = useState(false)
-  const [adding,     setAdding]     = useState(false)
-  const [editId,     setEditId]     = useState(null)
-  const [editName,   setEditName]   = useState('')
-  const [editSlug,   setEditSlug]   = useState('')
-  const [editImage,  setEditImage]  = useState(null)
+  const [adding,       setAdding]       = useState(false)
+  const [editId,       setEditId]       = useState(null)
+  const [editName,     setEditName]     = useState('')
+  const [editSlug,     setEditSlug]     = useState('')
+  const [editImage,    setEditImage]    = useState(null)
   const [uploadingEdit, setUploadingEdit] = useState(false)
-  const [error,      setError]      = useState('')
+  const [error,        setError]        = useState('')
+  const [saveStatus,   setSaveStatus]   = useState(null) // null | 'saving' | 'saved' | 'error'
+  const [reorderError, setReorderError] = useState('')
 
-  const newFileInputRef = useRef(null)
+  const debounceTimeoutRef    = useRef(null)
+  const previousCategoriesRef = useRef([])
+
+  const newFileInputRef  = useRef(null)
   const editFileInputRef = useRef(null)
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 5,
+      },
+    }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  )
 
   const load = async () => {
     setLoading(true)
     try {
       const { data } = await adminApi.get('/admin/categories/')
       setCategories(data)
+      previousCategoriesRef.current = data
     } catch {} finally { setLoading(false) }
   }
 
@@ -514,9 +730,107 @@ function CategoriesTab() {
     }
   }
 
+  const handleReorder = (newCategories) => {
+    const rollbackSnapshot = [...categories]
+    const updated = newCategories.map((c, idx) => ({ ...c, sort_order: idx + 1 }))
+
+    setCategories(updated)
+    setSaveStatus('saving')
+
+    if (debounceTimeoutRef.current) {
+      clearTimeout(debounceTimeoutRef.current)
+    }
+
+    debounceTimeoutRef.current = setTimeout(async () => {
+      try {
+        const payload = updated.map((c, idx) => ({
+          id: c.id,
+          sort_order: idx + 1,
+        }))
+        await adminApi.patch('/admin/categories/reorder', payload)
+        previousCategoriesRef.current = updated
+        setSaveStatus('saved')
+        setTimeout(() => {
+          setSaveStatus(s => s === 'saved' ? null : s)
+        }, 2500)
+      } catch (err) {
+        console.error('Ошибка сохранения порядка категорий:', err)
+        setCategories(rollbackSnapshot)
+        setSaveStatus('error')
+        setReorderError(err.response?.data?.detail ?? 'Не удалось сохранить порядок категорий. Изменения отменены.')
+        setTimeout(() => {
+          setSaveStatus(s => s === 'error' ? null : s)
+          setReorderError('')
+        }, 4000)
+      }
+    }, 400)
+  }
+
+  const handleDragEnd = (event) => {
+    const { active, over } = event
+    if (!over || active.id === over.id) return
+
+    const oldIndex = categories.findIndex(c => c.id === active.id)
+    const newIndex = categories.findIndex(c => c.id === over.id)
+
+    if (oldIndex !== -1 && newIndex !== -1) {
+      const reordered = arrayMove(categories, oldIndex, newIndex)
+      handleReorder(reordered)
+    }
+  }
+
+  const handleMoveUp = (index) => {
+    if (index <= 0) return
+    const reordered = arrayMove(categories, index, index - 1)
+    handleReorder(reordered)
+  }
+
+  const handleMoveDown = (index) => {
+    if (index >= categories.length - 1) return
+    const reordered = arrayMove(categories, index, index + 1)
+    handleReorder(reordered)
+  }
+
   return (
     <div className="px-4 py-4">
-      <h2 className="text-lg font-bold text-gray-900 mb-4">Категории</h2>
+      <div className="mb-4">
+        <h2 className="text-xl font-bold text-gray-900">
+          Категории {!loading && <span className="text-gray-400 font-normal text-base">({categories.length})</span>}
+        </h2>
+        <p className="text-xs text-gray-500 mt-0.5">
+          Перетаскивайте категории или используйте стрелки для изменения порядка кнопок в каталоге
+        </p>
+      </div>
+
+      {/* Индикатор сохранения порядка категорий */}
+      {saveStatus && (
+        <div className={`flex items-center gap-2 px-3.5 py-2.5 rounded-xl text-xs font-semibold mb-4 transition-all duration-300 ${
+          saveStatus === 'saving'
+            ? 'bg-blue-50 text-blue-700 border border-blue-100 shadow-sm'
+            : saveStatus === 'saved'
+            ? 'bg-green-50 text-green-700 border border-green-200 shadow-sm'
+            : 'bg-red-50 text-red-700 border border-red-200 shadow-sm'
+        }`}>
+          {saveStatus === 'saving' && (
+            <>
+              <span className="animate-spin w-3.5 h-3.5 border-2 border-blue-600 border-t-transparent rounded-full flex-shrink-0" />
+              <span>Сохранение порядка категорий...</span>
+            </>
+          )}
+          {saveStatus === 'saved' && (
+            <>
+              <Check size={16} className="text-green-600 flex-shrink-0" />
+              <span>Порядок категорий сохранён (кнопки в каталоге обновлены)</span>
+            </>
+          )}
+          {saveStatus === 'error' && (
+            <>
+              <X size={16} className="text-red-600 flex-shrink-0" />
+              <span>{reorderError || 'Ошибка сохранения порядка категорий. Позиции возвращены назад.'}</span>
+            </>
+          )}
+        </div>
+      )}
 
       {/* Форма добавления */}
       <form onSubmit={handleAdd} className="bg-white rounded-2xl border border-gray-100 p-4 mb-4 space-y-3">
@@ -588,7 +902,7 @@ function CategoriesTab() {
         </button>
       </form>
 
-      {/* Список категорий */}
+      {/* Список категорий с перетаскиванием */}
       {loading ? (
         <div className="space-y-2">
           {[1,2,3].map(i => <div key={i} className="bg-white rounded-xl h-14 animate-pulse" />)}
@@ -599,93 +913,42 @@ function CategoriesTab() {
           <p className="text-sm">Категорий пока нет</p>
         </div>
       ) : (
-        <div className="space-y-2">
-          {categories.map(cat => (
-            <div key={cat.id} className="bg-white rounded-xl border border-gray-100 overflow-hidden">
-              {editId === cat.id ? (
-                /* Режим редактирования */
-                <div className="p-3 space-y-3">
-                  <input className="admin-input text-sm py-2.5" value={editName}
-                    onChange={e => setEditName(e.target.value)} />
-                  <input className="admin-input font-mono text-xs py-2.5" value={editSlug}
-                    onChange={e => setEditSlug(e.target.value)} />
-
-                  {/* Редактирование фото */}
-                  <div>
-                    <p className="text-xs text-gray-400 mb-1.5">Фото категории:</p>
-                    {editImage ? (
-                      <div className="relative inline-block">
-                        <img src={editImage} alt="Фото категории" className="w-20 h-20 rounded-xl object-cover border border-gray-200" />
-                        <button
-                          type="button"
-                          onClick={() => setEditImage(null)}
-                          className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-red-600 text-white flex items-center justify-center text-xs shadow"
-                        >
-                          <X size={12} />
-                        </button>
-                      </div>
-                    ) : (
-                      <button
-                        type="button"
-                        onClick={() => editFileInputRef.current?.click()}
-                        disabled={uploadingEdit}
-                        className="flex items-center gap-1.5 px-3 py-2 rounded-lg border border-dashed border-gray-300 text-xs text-gray-600 hover:border-orange-500 hover:text-orange-600"
-                      >
-                        {uploadingEdit ? (
-                          <span className="animate-spin w-3 h-3 border-2 border-orange-500 border-t-transparent rounded-full" />
-                        ) : (
-                          <Upload size={14} />
-                        )}
-                        <span>{uploadingEdit ? 'Загрузка...' : '+ Добавить фото'}</span>
-                      </button>
-                    )}
-                    <input
-                      ref={editFileInputRef}
-                      type="file"
-                      accept="image/jpeg,image/png,image/webp,image/gif"
-                      onChange={handleEditFileSelect}
-                      className="hidden"
-                    />
-                  </div>
-
-                  <div className="flex gap-2">
-                    <button onClick={() => handleSaveEdit(cat.id)}
-                      className="flex-1 py-2.5 rounded-xl bg-green-600 text-white text-sm font-bold active:bg-green-700">
-                      Сохранить
-                    </button>
-                    <button onClick={() => setEditId(null)}
-                      className="flex-1 py-2.5 rounded-xl bg-gray-100 text-gray-600 text-sm font-semibold">
-                      Отмена
-                    </button>
-                  </div>
-                </div>
-              ) : (
-                /* Обычный вид */
-                <div className="flex items-center px-4 py-3 gap-3">
-                  {cat.image_url ? (
-                    <img src={cat.image_url} alt={cat.name} className="w-12 h-12 rounded-xl object-cover bg-gray-100 border border-gray-200 flex-shrink-0" />
-                  ) : (
-                    <div className="w-12 h-12 rounded-xl bg-gray-100 border border-gray-200 flex items-center justify-center flex-shrink-0 text-gray-400">
-                      <ImageIcon size={20} />
-                    </div>
-                  )}
-                  <div className="flex-1 min-w-0">
-                    <p className="font-semibold text-gray-900 text-sm leading-tight">{cat.name}</p>
-                    <p className="text-xs text-gray-400 font-mono mt-0.5">{cat.slug}</p>
-                  </div>
-                  <button onClick={() => { setEditId(cat.id); setEditName(cat.name); setEditSlug(cat.slug); setEditImage(cat.image_url || null) }}
-                    className="p-2 text-blue-500 active:bg-blue-50 rounded-lg" aria-label="Редактировать категорию">
-                    <Pencil size={16} />
-                  </button>
-                  <button onClick={() => handleDelete(cat.id)}
-                    className="p-2 text-red-500 active:bg-red-50 rounded-lg" aria-label="Удалить категорию">
-                    <Trash2 size={16} />
-                  </button>
-                </div>
-              )}
+        <DndContext
+          sensors={sensors}
+          collisionDetection={closestCenter}
+          onDragEnd={handleDragEnd}
+        >
+          <SortableContext
+            items={categories.map(c => c.id)}
+            strategy={verticalListSortingStrategy}
+          >
+            <div className="space-y-2">
+              {categories.map((cat, idx) => (
+                <SortableCategoryCard
+                  key={cat.id}
+                  cat={cat}
+                  index={idx}
+                  total={categories.length}
+                  editId={editId}
+                  editName={editName}
+                  setEditName={setEditName}
+                  editSlug={editSlug}
+                  setEditSlug={setEditSlug}
+                  editImage={editImage}
+                  setEditImage={setEditImage}
+                  uploadingEdit={uploadingEdit}
+                  editFileInputRef={editFileInputRef}
+                  handleEditFileSelect={handleEditFileSelect}
+                  handleSaveEdit={handleSaveEdit}
+                  setEditId={setEditId}
+                  handleDelete={handleDelete}
+                  onMoveUp={handleMoveUp}
+                  onMoveDown={handleMoveDown}
+                />
+              ))}
             </div>
-          ))}
-        </div>
+          </SortableContext>
+        </DndContext>
       )}
     </div>
   )

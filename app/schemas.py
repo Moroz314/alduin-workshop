@@ -15,16 +15,25 @@ class CategoryBase(BaseModel):
     name: str = Field(..., min_length=1, max_length=128)
     slug: str = Field(..., min_length=1, max_length=128, pattern=r"^[a-z0-9-]+$")
     image_url: str | None = Field(default=None, max_length=512)
+    sort_order: int = Field(default=0)
 
 class CategoryCreate(CategoryBase): pass
 class CategoryUpdate(BaseModel):
     name: str | None = Field(default=None, min_length=1, max_length=128)
     slug: str | None = Field(default=None, min_length=1, max_length=128, pattern=r"^[a-z0-9-]+$")
     image_url: str | None = Field(default=None, max_length=512)
+    sort_order: int | None = Field(default=None)
 
 class CategoryRead(CategoryBase):
     model_config = ConfigDict(from_attributes=True)
     id: int
+
+class CategoryReorderItem(BaseModel):
+    id: int = Field(..., description="ID категории")
+    sort_order: int = Field(..., description="Порядковый номер")
+
+class CategoryReorderRequest(BaseModel):
+    items: list[CategoryReorderItem]
 
 
 # ── Product ───────────────────────────────────────────────────────────────────

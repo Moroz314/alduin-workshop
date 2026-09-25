@@ -2,14 +2,21 @@
 Защищённый CRUD для категорий.
 Все эндпоинты требуют JWT токен администратора.
 """
-from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy import select
+from typing import Union
+from fastapi import APIRouter, Body, Depends, HTTPException, status
+from sqlalchemy import case, func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
 from app.dependencies import get_current_admin
 from app.models import AdminUser, Category
-from app.schemas import CategoryCreate, CategoryRead, CategoryUpdate
+from app.schemas import (
+    CategoryCreate,
+    CategoryRead,
+    CategoryUpdate,
+    CategoryReorderItem,
+    CategoryReorderRequest,
+)
 
 router = APIRouter()
 
@@ -19,8 +26,31 @@ async def list_categories(
     db:    AsyncSession = Depends(get_db),
     _:     AdminUser   = Depends(get_current_admin),
 ) -> list[CategoryRead]:
-    result = await db.execute(select(Category).order_by(Category.name))
+    result = await db.execute(select(Category).order_by(Category.sort_order.asc(), Category.id.asc()))
     return result.scalars().all()
+
+
+@router.patch("/reorder", summary="Изменить порядок категорий")
+async def reorder_categories(
+    payload: Union[list[CategoryReorderItem], CategoryReorderRequest] = Body(...),
+    db: AsyncSession = Depends(get_db),
+    _: AdminUser = Depends(get_current_admin),
+):
+    items = payload if isinstance(payload, list) else payload.items
+    if not items:
+        return {"status": "ok", "updated": 0}
+
+    # Bulk update в рамках транзакции
+    case_mapping = {item.id: item.sort_order for item in items}
+    stmt = (
+        update(Category)
+        .where(Category.id.in_(case_mapping.keys()))
+        .values(sort_order=case(case_mapping, value=Category.id))
+    )
+    result = await db.execute(stmt)
+    await db.commit()
+    updated_count = result.rowcount if result.rowcount is not None and result.rowcount >= 0 else len(items)
+    return {"status": "ok", "updated": updated_count}
 
 
 @router.post(
@@ -39,7 +69,13 @@ async def create_category(
     if existing.scalar_one_or_none():
         raise HTTPException(status_code=409, detail=f"Slug '{body.slug}' уже занят")
 
-    category = Category(**body.model_dump())
+    data = body.model_dump()
+    if not data.get("sort_order"):
+        max_q = select(func.coalesce(func.max(Category.sort_order), 0))
+        max_order = (await db.execute(max_q)).scalar() or 0
+        data["sort_order"] = max_order + 1
+
+    category = Category(**data)
     db.add(category)
     await db.commit()
     await db.refresh(category)

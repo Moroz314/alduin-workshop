@@ -50,6 +50,23 @@ async def lifespan(app: FastAPI):
                     sa.text("ALTER TABLE categories ADD COLUMN IF NOT EXISTS image_url VARCHAR(512);")
                 )
                 await conn.execute(
+                    sa.text("ALTER TABLE categories ADD COLUMN IF NOT EXISTS sort_order INTEGER DEFAULT 0;")
+                )
+                await conn.execute(
+                    sa.text("""
+                        UPDATE categories
+                        SET sort_order = sub.rn
+                        FROM (
+                            SELECT id, ROW_NUMBER() OVER (ORDER BY id ASC) AS rn
+                            FROM categories
+                        ) sub
+                        WHERE categories.id = sub.id AND (categories.sort_order = 0 OR categories.sort_order IS NULL);
+                    """)
+                )
+                await conn.execute(
+                    sa.text("CREATE INDEX IF NOT EXISTS ix_categories_sort_order ON categories (sort_order);")
+                )
+                await conn.execute(
                     sa.text("ALTER TABLE orders ADD COLUMN IF NOT EXISTS delivery_cost NUMERIC(10, 2) DEFAULT 0.00;")
                 )
                 await conn.execute(

@@ -149,6 +149,37 @@ class TestProductSortOrder(unittest.TestCase):
             ).scalars().all()
             self.assertEqual([p.name for p in c2_products], ["К2-П1", "К2-П2"])
 
+    def test_category_bulk_reorder(self):
+        """PATCH /api/admin/categories/reorder обновляет порядок категорий."""
+        with self.Session() as session:
+            c1 = Category(name="Кожа", slug="leather", sort_order=1)
+            c2 = Category(name="Ковка", slug="forged", sort_order=2)
+            c3 = Category(name="Украшения", slug="jewelry", sort_order=3)
+            session.add_all([c1, c2, c3])
+            session.commit()
+
+            # Меняем порядок: Ковка (1), Украшения (2), Кожа (3)
+            reorder_items = [
+                {"id": c2.id, "sort_order": 1},
+                {"id": c3.id, "sort_order": 2},
+                {"id": c1.id, "sort_order": 3},
+            ]
+            case_mapping = {item["id"]: item["sort_order"] for item in reorder_items}
+            stmt = (
+                update(Category)
+                .where(Category.id.in_(case_mapping.keys()))
+                .values(sort_order=case(case_mapping, value=Category.id))
+            )
+            res = session.execute(stmt)
+            session.commit()
+            self.assertEqual(res.rowcount, 3)
+
+            # Проверяем публичный порядок категорий
+            cats = session.execute(
+                select(Category).order_by(Category.sort_order.asc(), Category.id.asc())
+            ).scalars().all()
+            self.assertEqual([c.name for c in cats], ["Ковка", "Украшения", "Кожа"])
+
 
 if __name__ == "__main__":
     unittest.main()

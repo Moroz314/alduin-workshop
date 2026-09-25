@@ -34,6 +34,7 @@ class Category(Base):
     name: Mapped[str] = mapped_column(sa.String(128), nullable=False)
     slug: Mapped[str] = mapped_column(sa.String(128), nullable=False, unique=True, index=True)
     image_url: Mapped[str | None] = mapped_column(sa.String(512), nullable=True)
+    sort_order: Mapped[int] = mapped_column(sa.Integer, nullable=False, default=0, server_default="0", index=True)
 
     products: Mapped[list["Product"]] = relationship(
         "Product", back_populates="category", lazy="selectin"

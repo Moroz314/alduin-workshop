@@ -41,6 +41,30 @@ async def run_migration():
         )
         print("Индекс ix_products_sort_order проверен/создан.")
 
+        # Категории
+        await conn.execute(
+            sa.text("ALTER TABLE categories ADD COLUMN IF NOT EXISTS sort_order INTEGER DEFAULT 0;")
+        )
+        print("Колонка sort_order у categories проверена/добавлена.")
+
+        res_cat = await conn.execute(
+            sa.text("""
+                UPDATE categories
+                SET sort_order = sub.rn
+                FROM (
+                    SELECT id, ROW_NUMBER() OVER (ORDER BY id ASC) AS rn
+                    FROM categories
+                ) sub
+                WHERE categories.id = sub.id AND (categories.sort_order = 0 OR categories.sort_order IS NULL);
+            """)
+        )
+        print(f"Обновлено категорий: {res_cat.rowcount}")
+
+        await conn.execute(
+            sa.text("CREATE INDEX IF NOT EXISTS ix_categories_sort_order ON categories (sort_order);")
+        )
+        print("Индекс ix_categories_sort_order проверен/создан.")
+
     await engine.dispose()
     print("Миграция sort_order успешно завершена!")
 
