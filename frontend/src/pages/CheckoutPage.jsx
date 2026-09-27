@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useMemo } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { useDispatch, useSelector } from 'react-redux'
 import { api } from '../api/axios'
 import { selectItems, selectTotal, selectSessionId, clearCartState } from '../store/cartSlice'
@@ -53,6 +53,7 @@ function SuccessScreen({ orderId }) {
    CHECKOUT PAGE
    ══════════════════════════════════════════════════════════════ */
 export default function CheckoutPage() {
+  const navigate  = useNavigate()
   const dispatch  = useDispatch()
   const items     = useSelector(selectItems)
   const cartTotal = useSelector(selectTotal)
@@ -285,13 +286,14 @@ export default function CheckoutPage() {
         comment:          form.comment || null,
       })
 
+      dispatch(clearCartState())
+
       if (data.payment_url) {
         window.location.href = data.payment_url
         return
       }
 
-      setOrderId(data.order_id)
-      dispatch(clearCartState())
+      navigate(`/order/success/${data.order_id}`)
     } catch (err) {
       setError(err.response?.data?.detail ?? 'Ошибка оформления заказа. Попробуйте ещё раз.')
     } finally {

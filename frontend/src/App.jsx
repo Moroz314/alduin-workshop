@@ -11,6 +11,7 @@ import ProductPage from './pages/ProductPage'
 import WarrantyPage from './pages/WarrantyPage'
 import PrivacyPage from './pages/PrivacyPage'
 import PaymentPage from './pages/PaymentPage'
+import OrderSuccessPage from './pages/OrderSuccessPage'
 
 /* Admin pages */
 import AdminLogin        from './pages/admin/AdminLogin'
@@ -57,6 +58,8 @@ export default function App() {
                 } />
                 <Route path="/gallery"   element={<GalleryPage />} />
                 <Route path="/checkout"  element={<CheckoutPage />} />
+                <Route path="/order/success/:orderId" element={<OrderSuccessPage />} />
+                <Route path="/order/:orderId" element={<OrderSuccessPage />} />
                 <Route path="/contacts"  element={<ContactsPage />} />
                 <Route path="/warranty"  element={<WarrantyPage />} />
                 <Route path="/privacy"   element={<PrivacyPage />} />

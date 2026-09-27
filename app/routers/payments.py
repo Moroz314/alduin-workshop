@@ -46,6 +46,26 @@ async def _handle_yookassa_webhook(
             detail="payment.id отсутствует в уведомлении",
         )
 
+    # Обработка отмены платежа
+    if event == "payment.canceled":
+        try:
+            verified_payment = await get_payment(str(payment_id))
+        except Exception as exc:
+            logger.error("Не удалось запросить отменённый платёж %s из API ЮKassa: %s", payment_id, exc)
+            return "OK"
+        if verified_payment and getattr(verified_payment, "status", None) == "canceled":
+            metadata = getattr(verified_payment, "metadata", {}) or {}
+            c_order_id = str(metadata.get("order_id") or "")
+            if c_order_id:
+                c_stmt = select(Order).where(Order.order_id == c_order_id).with_for_update()
+                c_order = (await db.execute(c_stmt)).scalar_one_or_none()
+                if c_order and c_order.status == OrderStatus.pending:
+                    c_order.status = OrderStatus.cancelled
+                    c_order.payment_id = str(verified_payment.id)
+                    await db.commit()
+                    logger.info("Заказ %s переведён в статус cancelled по webhook payment.canceled", c_order_id)
+        return "OK"
+
     # Реагируем только на событие успешной оплаты
     if event != "payment.succeeded":
         logger.info("Пропуск события ЮKassa '%s' для платежа %s", event, payment_id)

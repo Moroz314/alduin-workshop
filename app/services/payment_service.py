@@ -18,18 +18,51 @@ def _configure() -> None:
     Configuration.configure(settings.yookassa_shop_id, settings.yookassa_secret_key)
 
 
+def build_yookassa_return_url(order_id: str) -> str:
+    """Формирует корректный return_url для ЮKassa без дублирования схемы протокола."""
+    settings = get_settings()
+    base_url = (settings.yookassa_return_url or "").strip()
+    if not base_url:
+        return f"https://alduin-workshop.ru/order/success/{order_id}"
+
+    # Подстановка плейсхолдеров, если они указаны в шаблоне
+    if "{order_id}" in base_url:
+        return base_url.format(order_id=order_id)
+    if ":orderId" in base_url:
+        return base_url.replace(":orderId", order_id)
+    if "{orderId}" in base_url:
+        return base_url.format(orderId=order_id)
+
+    # Если в старых конфигах указан /checkout, заменяем на /order/success
+    if base_url.endswith("/checkout"):
+        base_url = base_url[:-len("/checkout")].rstrip("/") + "/order/success"
+
+    # Избегаем повторного добавления order_id
+    if base_url.endswith(f"/{order_id}"):
+        return base_url
+
+    return f"{base_url.rstrip('/')}/{order_id}"
+
+
 def _build_receipt(
-    cart: Any,
+    cart_or_items: Any,
     customer_email: str | None,
     customer_phone: str,
     delivery_cost: Decimal = Decimal("0.00"),
 ) -> dict[str, Any]:
     items = []
-    for item in cart.items:
-        amount = Decimal(str(item.subtotal))
+    source_items = getattr(cart_or_items, "items", cart_or_items) or []
+    for item in source_items:
+        name = getattr(item, "name", None) or getattr(item, "product_name", "Товар")
+        quantity = getattr(item, "quantity", 1)
+        subtotal = getattr(item, "subtotal", None)
+        if subtotal is None:
+            price = getattr(item, "price", None) or getattr(item, "product_price", Decimal("0.00"))
+            subtotal = Decimal(str(price)) * int(str(quantity))
+        amount = Decimal(str(subtotal))
         items.append({
-            "description": item.name[:128],
-            "quantity": str(item.quantity),
+            "description": str(name)[:128],
+            "quantity": str(quantity),
             "amount": {"value": f"{amount:.2f}", "currency": "RUB"},
             "vat_code": 1,
             "payment_mode": "full_payment",
@@ -59,13 +92,13 @@ def _create_payment_sync(
     delivery_cost: Decimal = Decimal("0.00"),
 ) -> str:
     _configure()
-    settings = get_settings()
+    return_url = build_yookassa_return_url(order_id)
     request = {
         "amount": {"value": f"{Decimal(str(amount)):.2f}", "currency": "RUB"},
         "capture": True,
         "description": f"Заказ {order_id}",
         "receipt": _build_receipt(cart, customer_email, customer_phone, delivery_cost),
-        "confirmation": {"type": "redirect", "return_url": settings.yookassa_return_url},
+        "confirmation": {"type": "redirect", "return_url": return_url},
         "metadata": {"order_id": order_id},
     }
     payment = Payment.create(request, str(uuid.uuid4()))

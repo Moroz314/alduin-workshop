@@ -14,7 +14,7 @@ logger = logging.getLogger(__name__)
 import sqlalchemy as sa
 from app.config import get_settings
 from app.database import Base, engine
-from app.routers import categories, products, cart, checkout, delivery
+from app.routers import categories, products, cart, checkout, delivery, orders
 from app.routers import auth
 from app.routers import payments
 from app.routers import articles as public_articles
@@ -219,6 +219,7 @@ app.include_router(public_articles.router,   prefix="/api/articles",   tags=["Ar
 app.include_router(public_gallery.router,    prefix="/api/gallery",    tags=["Gallery"])
 app.include_router(payments.router,          prefix="/api/payments",    tags=["Payments"])
 app.include_router(delivery.router,          prefix="/api/delivery",    tags=["Delivery"])
+app.include_router(orders.router,            prefix="/api/orders",      tags=["Orders"])
 
 # ── Защищённые эндпоинты администратора ──────────────────────────────────────
 app.include_router(admin_categories.router,  prefix="/api/admin/categories", tags=["Admin · Categories"])

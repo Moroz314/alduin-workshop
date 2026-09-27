@@ -242,6 +242,23 @@ class OrderStatusUpdate(BaseModel):
     status: OrderStatus
 
 
+class OrderStatusPublicRead(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    order_id:         str
+    status:           OrderStatus
+    total_amount:     Decimal
+    delivery_cost:    Decimal = Decimal("0.00")
+    delivery_address: str
+    guest_name:       str
+    guest_phone:      str
+    guest_email:      str | None = None
+    payment_method:   str
+    comment:          str | None = None
+    cdek_number:      str | None = None
+    created_at:       datetime
+    items:            list[OrderItemRead] = []
+
+
 # ── Delivery (CDEK) ───────────────────────────────────────────────────────────
 
 class DeliveryCalculateRequest(BaseModel):
